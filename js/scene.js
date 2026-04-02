@@ -16,7 +16,11 @@ Auto3D.Scene = (function() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    if (renderer.outputColorSpace !== undefined) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } else {
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 

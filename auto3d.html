@@ -501,22 +501,12 @@ body.tool-erase #viewport { cursor: not-allowed; }
   <!-- View Label Overlay -->
   <div id="view-label">PERSPECTIVE</div>
 
-  <!-- Three.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/TransformControls.js"></script>
+  <!-- Three.js CDN (r137 - last version with examples/js/) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/controls/TransformControls.js"></script>
 
   <!-- App Scripts -->
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 <script>
 /* Auto3D - Utility Functions */
 var Auto3D = Auto3D || {};
@@ -709,7 +699,11 @@ Auto3D.Scene = (function() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    if (renderer.outputColorSpace !== undefined) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } else {
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
