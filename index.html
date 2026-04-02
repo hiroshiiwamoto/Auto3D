@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto3D - 3D Car Design Tool</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="viewport"></canvas>
+
+  <!-- Top Toolbar -->
+  <div id="toolbar">
+    <div class="toolbar-group">
+      <button id="tool-select" class="tool-btn active" title="Select (V)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" fill="currentColor"/></svg>
+        <span>Select</span>
+      </button>
+      <button id="tool-draw" class="tool-btn" title="Draw Curve (D)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 17c3.36 0 4.18-2.13 6.14-4.73C11.1 9.67 13.4 7 18 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Draw</span>
+      </button>
+      <button id="tool-edit" class="tool-btn" title="Edit Points (E)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Edit</span>
+      </button>
+      <button id="tool-surface" class="tool-btn" title="Generate Surface (S)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 4h16v16H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M4 16h16M10 4v16M16 4v16" stroke="currentColor" stroke-width="1" opacity="0.4"/></svg>
+        <span>Surface</span>
+      </button>
+      <button id="tool-erase" class="tool-btn" title="Delete (X)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Delete</span>
+      </button>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button id="btn-undo" class="tool-btn" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 9h12a4 4 0 010 8H11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="btn-redo" class="tool-btn" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 9H8a4 4 0 000 8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <label class="toolbar-checkbox">
+        <input type="checkbox" id="chk-mirror" checked>
+        <span>Mirror</span>
+      </label>
+      <label class="toolbar-checkbox">
+        <input type="checkbox" id="chk-snap" checked>
+        <span>Snap</span>
+      </label>
+    </div>
+    <div class="toolbar-title">Auto3D</div>
+  </div>
+
+  <!-- Left Panel: Views -->
+  <div id="panel-left">
+    <div class="panel-header">View</div>
+    <button class="view-btn active" data-view="perspective">
+      <span class="view-key">1</span> Perspective
+    </button>
+    <button class="view-btn" data-view="side">
+      <span class="view-key">2</span> Side
+    </button>
+    <button class="view-btn" data-view="front">
+      <span class="view-key">3</span> Front
+    </button>
+    <button class="view-btn" data-view="top">
+      <span class="view-key">4</span> Top
+    </button>
+    <button class="view-btn" data-view="rear">
+      <span class="view-key">5</span> Rear
+    </button>
+    <div class="panel-header" style="margin-top:12px">Curves</div>
+    <div id="curve-list"></div>
+  </div>
+
+  <!-- Right Panel: Properties -->
+  <div id="panel-right">
+    <!-- Dimensions Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-dimensions">
+        <span class="toggle-arrow">&#9660;</span> Dimensions (mm)
+      </div>
+      <div class="section-body" id="sec-dimensions">
+        <label>Wheelbase<input type="range" id="dim-wheelbase" min="2000" max="3500" value="2700"><span class="dim-val" data-for="dim-wheelbase">2700</span></label>
+        <label>Width<input type="range" id="dim-width" min="1400" max="2200" value="1850"><span class="dim-val" data-for="dim-width">1850</span></label>
+        <label>Height<input type="range" id="dim-height" min="1000" max="2000" value="1450"><span class="dim-val" data-for="dim-height">1450</span></label>
+        <label>Front Overhang<input type="range" id="dim-front-overhang" min="400" max="1200" value="900"><span class="dim-val" data-for="dim-front-overhang">900</span></label>
+        <label>Rear Overhang<input type="range" id="dim-rear-overhang" min="400" max="1400" value="1000"><span class="dim-val" data-for="dim-rear-overhang">1000</span></label>
+        <label>Ground Clearance<input type="range" id="dim-ground-clearance" min="80" max="300" value="150"><span class="dim-val" data-for="dim-ground-clearance">150</span></label>
+      </div>
+    </div>
+
+    <!-- Surface Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-surface">
+        <span class="toggle-arrow">&#9660;</span> Surface
+      </div>
+      <div class="section-body" id="sec-surface">
+        <button id="btn-loft" class="panel-btn">Loft Selected Curves</button>
+        <label>Resolution<input type="range" id="surface-resolution" min="8" max="64" value="32"><span class="dim-val" data-for="surface-resolution">32</span></label>
+        <div id="surface-list"></div>
+      </div>
+    </div>
+
+    <!-- Material Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-material">
+        <span class="toggle-arrow">&#9660;</span> Material
+      </div>
+      <div class="section-body" id="sec-material">
+        <label>Color<input type="color" id="mat-color" value="#c0392b"></label>
+        <label>Metalness<input type="range" id="mat-metalness" min="0" max="100" value="90"><span class="dim-val" data-for="mat-metalness">0.9</span></label>
+        <label>Roughness<input type="range" id="mat-roughness" min="0" max="100" value="20"><span class="dim-val" data-for="mat-roughness">0.2</span></label>
+        <label>Clearcoat<input type="range" id="mat-clearcoat" min="0" max="100" value="100"><span class="dim-val" data-for="mat-clearcoat">1.0</span></label>
+        <div class="preset-row">
+          <button class="preset-btn" data-preset="red">Red</button>
+          <button class="preset-btn" data-preset="black">Black</button>
+          <button class="preset-btn" data-preset="white">White</button>
+          <button class="preset-btn" data-preset="blue">Blue</button>
+          <button class="preset-btn" data-preset="silver">Silver</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-environment">
+        <span class="toggle-arrow">&#9660;</span> Environment
+      </div>
+      <div class="section-body" id="sec-environment">
+        <div class="env-grid">
+          <button class="env-btn active" data-env="studio">Studio</button>
+          <button class="env-btn" data-env="outdoor">Outdoor</button>
+          <button class="env-btn" data-env="showroom">Showroom</button>
+          <button class="env-btn" data-env="sunset">Sunset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Status Bar -->
+  <div id="status-bar">
+    <span id="status-tool">Tool: Select</span>
+    <span id="status-view">View: Perspective</span>
+    <span id="status-curves">Curves: 0</span>
+    <span id="status-hint">Click and drag to orbit. Scroll to zoom.</span>
+  </div>
+
+  <!-- View Label Overlay -->
+  <div id="view-label">PERSPECTIVE</div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/TransformControls.js"></script>
+
+  <!-- App Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/car-dimensions.js"></script>
+  <script src="js/curve-tools.js"></script>
+  <script src="js/surface-engine.js"></script>
+  <script src="js/environment.js"></script>
+  <script src="js/materials.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
