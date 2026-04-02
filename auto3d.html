@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto3D - 3D Car Design Tool</title>
+  <style>
+/* Auto3D - 3D Car Design Tool */
+:root {
+  --bg-dark: #1a1a1a;
+  --bg-panel: rgba(26, 26, 26, 0.92);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(0, 150, 255, 0.25);
+  --accent: #0096ff;
+  --accent-dim: #0070cc;
+  --text: #e0e0e0;
+  --text-dim: #888;
+  --border: rgba(255, 255, 255, 0.1);
+  --radius: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  overflow: hidden;
+  background: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  user-select: none;
+}
+
+#viewport {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+/* Top Toolbar */
+#toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 4px;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  margin: 0 8px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+.tool-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.tool-btn.active {
+  background: var(--bg-active);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tool-btn svg { flex-shrink: 0; }
+
+.toolbar-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+}
+.toolbar-checkbox input { accent-color: var(--accent); }
+
+.toolbar-title {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+
+/* Left Panel */
+#panel-left {
+  position: fixed;
+  top: 60px; left: 12px;
+  width: 160px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.panel-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+
+.view-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.view-btn:hover { background: var(--bg-hover); color: var(--text); }
+.view-btn.active { background: var(--bg-active); border-color: var(--accent); color: var(--accent); }
+
+.view-key {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+#curve-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.curve-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.curve-item:hover { background: var(--bg-hover); }
+.curve-item.selected { background: var(--bg-active); color: var(--accent); }
+.curve-item .curve-color {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Right Panel */
+#panel-right {
+  position: fixed;
+  top: 60px; right: 12px;
+  width: 220px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.panel-section { border-bottom: 1px solid var(--border); }
+.panel-section:last-child { border-bottom: none; }
+
+.section-header {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.section-header:hover { background: var(--bg-hover); }
+.toggle-arrow {
+  font-size: 8px;
+  transition: transform 0.2s;
+}
+.section-header.collapsed .toggle-arrow { transform: rotate(-90deg); }
+
+.section-body {
+  padding: 4px 12px 12px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  max-height: 500px;
+}
+.section-body.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.section-body label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.section-body label input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+}
+.section-body label input[type="color"] {
+  width: 32px; height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+}
+.dim-val {
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-size: 10px;
+}
+
+.panel-btn {
+  width: 100%;
+  padding: 7px;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 4px 0;
+  transition: background 0.15s;
+}
+.panel-btn:hover { background: var(--accent-dim); }
+
+.preset-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.preset-btn {
+  padding: 4px 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preset-btn:hover { background: var(--bg-active); color: var(--accent); }
+
+.env-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.env-btn {
+  padding: 8px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.env-btn:hover { border-color: var(--accent); color: var(--text); }
+.env-btn.active { background: var(--bg-active); border-color: var(--accent); color: var(--accent); }
+
+/* Status Bar */
+#status-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 28px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 24px;
+  font-size: 11px;
+  color: var(--text-dim);
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+/* View Label */
+#view-label {
+  position: fixed;
+  bottom: 40px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.15);
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* Cursor per tool */
+body.tool-select #viewport { cursor: default; }
+body.tool-draw #viewport { cursor: crosshair; }
+body.tool-edit #viewport { cursor: pointer; }
+body.tool-surface #viewport { cursor: cell; }
+body.tool-erase #viewport { cursor: not-allowed; }
+</style>
+</head>
+<body>
+  <canvas id="viewport"></canvas>
+
+  <!-- Top Toolbar -->
+  <div id="toolbar">
+    <div class="toolbar-group">
+      <button id="tool-select" class="tool-btn active" title="Select (V)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" fill="currentColor"/></svg>
+        <span>Select</span>
+      </button>
+      <button id="tool-draw" class="tool-btn" title="Draw Curve (D)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 17c3.36 0 4.18-2.13 6.14-4.73C11.1 9.67 13.4 7 18 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Draw</span>
+      </button>
+      <button id="tool-edit" class="tool-btn" title="Edit Points (E)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Edit</span>
+      </button>
+      <button id="tool-surface" class="tool-btn" title="Generate Surface (S)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 4h16v16H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M4 16h16M10 4v16M16 4v16" stroke="currentColor" stroke-width="1" opacity="0.4"/></svg>
+        <span>Surface</span>
+      </button>
+      <button id="tool-erase" class="tool-btn" title="Delete (X)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Delete</span>
+      </button>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button id="btn-undo" class="tool-btn" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 9h12a4 4 0 010 8H11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="btn-redo" class="tool-btn" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 9H8a4 4 0 000 8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <label class="toolbar-checkbox">
+        <input type="checkbox" id="chk-mirror" checked>
+        <span>Mirror</span>
+      </label>
+      <label class="toolbar-checkbox">
+        <input type="checkbox" id="chk-snap" checked>
+        <span>Snap</span>
+      </label>
+    </div>
+    <div class="toolbar-title">Auto3D</div>
+  </div>
+
+  <!-- Left Panel: Views -->
+  <div id="panel-left">
+    <div class="panel-header">View</div>
+    <button class="view-btn active" data-view="perspective">
+      <span class="view-key">1</span> Perspective
+    </button>
+    <button class="view-btn" data-view="side">
+      <span class="view-key">2</span> Side
+    </button>
+    <button class="view-btn" data-view="front">
+      <span class="view-key">3</span> Front
+    </button>
+    <button class="view-btn" data-view="top">
+      <span class="view-key">4</span> Top
+    </button>
+    <button class="view-btn" data-view="rear">
+      <span class="view-key">5</span> Rear
+    </button>
+    <div class="panel-header" style="margin-top:12px">Curves</div>
+    <div id="curve-list"></div>
+  </div>
+
+  <!-- Right Panel: Properties -->
+  <div id="panel-right">
+    <!-- Dimensions Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-dimensions">
+        <span class="toggle-arrow">&#9660;</span> Dimensions (mm)
+      </div>
+      <div class="section-body" id="sec-dimensions">
+        <label>Wheelbase<input type="range" id="dim-wheelbase" min="2000" max="3500" value="2700"><span class="dim-val" data-for="dim-wheelbase">2700</span></label>
+        <label>Width<input type="range" id="dim-width" min="1400" max="2200" value="1850"><span class="dim-val" data-for="dim-width">1850</span></label>
+        <label>Height<input type="range" id="dim-height" min="1000" max="2000" value="1450"><span class="dim-val" data-for="dim-height">1450</span></label>
+        <label>Front Overhang<input type="range" id="dim-front-overhang" min="400" max="1200" value="900"><span class="dim-val" data-for="dim-front-overhang">900</span></label>
+        <label>Rear Overhang<input type="range" id="dim-rear-overhang" min="400" max="1400" value="1000"><span class="dim-val" data-for="dim-rear-overhang">1000</span></label>
+        <label>Ground Clearance<input type="range" id="dim-ground-clearance" min="80" max="300" value="150"><span class="dim-val" data-for="dim-ground-clearance">150</span></label>
+      </div>
+    </div>
+
+    <!-- Surface Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-surface">
+        <span class="toggle-arrow">&#9660;</span> Surface
+      </div>
+      <div class="section-body" id="sec-surface">
+        <button id="btn-loft" class="panel-btn">Loft Selected Curves</button>
+        <label>Resolution<input type="range" id="surface-resolution" min="8" max="64" value="32"><span class="dim-val" data-for="surface-resolution">32</span></label>
+        <div id="surface-list"></div>
+      </div>
+    </div>
+
+    <!-- Material Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-material">
+        <span class="toggle-arrow">&#9660;</span> Material
+      </div>
+      <div class="section-body" id="sec-material">
+        <label>Color<input type="color" id="mat-color" value="#c0392b"></label>
+        <label>Metalness<input type="range" id="mat-metalness" min="0" max="100" value="90"><span class="dim-val" data-for="mat-metalness">0.9</span></label>
+        <label>Roughness<input type="range" id="mat-roughness" min="0" max="100" value="20"><span class="dim-val" data-for="mat-roughness">0.2</span></label>
+        <label>Clearcoat<input type="range" id="mat-clearcoat" min="0" max="100" value="100"><span class="dim-val" data-for="mat-clearcoat">1.0</span></label>
+        <div class="preset-row">
+          <button class="preset-btn" data-preset="red">Red</button>
+          <button class="preset-btn" data-preset="black">Black</button>
+          <button class="preset-btn" data-preset="white">White</button>
+          <button class="preset-btn" data-preset="blue">Blue</button>
+          <button class="preset-btn" data-preset="silver">Silver</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Section -->
+    <div class="panel-section">
+      <div class="section-header" data-toggle="sec-environment">
+        <span class="toggle-arrow">&#9660;</span> Environment
+      </div>
+      <div class="section-body" id="sec-environment">
+        <div class="env-grid">
+          <button class="env-btn active" data-env="studio">Studio</button>
+          <button class="env-btn" data-env="outdoor">Outdoor</button>
+          <button class="env-btn" data-env="showroom">Showroom</button>
+          <button class="env-btn" data-env="sunset">Sunset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Status Bar -->
+  <div id="status-bar">
+    <span id="status-tool">Tool: Select</span>
+    <span id="status-view">View: Perspective</span>
+    <span id="status-curves">Curves: 0</span>
+    <span id="status-hint">Click and drag to orbit. Scroll to zoom.</span>
+  </div>
+
+  <!-- View Label Overlay -->
+  <div id="view-label">PERSPECTIVE</div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/TransformControls.js"></script>
+
+  <!-- App Scripts -->
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<script>
+/* Auto3D - Utility Functions */
+var Auto3D = Auto3D || {};
+
+Auto3D.Utils = {
+  _idCounter: 0,
+
+  generateId: function() {
+    return 'id_' + (++this._idCounter) + '_' + Date.now().toString(36);
+  },
+
+  screenToWorld: function(event, camera, plane) {
+    var mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    var intersection = new THREE.Vector3();
+    var hit = raycaster.ray.intersectPlane(plane, intersection);
+    return hit ? intersection : null;
+  },
+
+  screenToMeshIntersection: function(event, camera, objects) {
+    var mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects(objects, true);
+    return intersects.length > 0 ? intersects[0] : null;
+  },
+
+  nearestPointOnCurve: function(curve, point, segments) {
+    segments = segments || 100;
+    var best = null;
+    var bestDist = Infinity;
+    var bestT = 0;
+    for (var i = 0; i <= segments; i++) {
+      var t = i / segments;
+      var p = curve.getPoint(t);
+      var d = p.distanceTo(point);
+      if (d < bestDist) {
+        bestDist = d;
+        best = p;
+        bestT = t;
+      }
+    }
+    return { point: best, t: bestT, distance: bestDist };
+  },
+
+  clamp: function(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  },
+
+  lerp: function(a, b, t) {
+    return a + (b - a) * t;
+  },
+
+  lerpVec3: function(a, b, t) {
+    return new THREE.Vector3(
+      this.lerp(a.x, b.x, t),
+      this.lerp(a.y, b.y, t),
+      this.lerp(a.z, b.z, t)
+    );
+  },
+
+  disposeMesh: function(mesh) {
+    if (mesh.geometry) mesh.geometry.dispose();
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(function(m) { m.dispose(); });
+      } else {
+        mesh.material.dispose();
+      }
+    }
+  },
+
+  createGradientTexture: function(color1, color2, vertical) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 256;
+    var ctx = canvas.getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 0, 256);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 2, 256);
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  },
+
+  snapToGrid: function(value, gridSize) {
+    return Math.round(value / gridSize) * gridSize;
+  },
+
+  snapVec3ToGrid: function(vec, gridSize) {
+    return new THREE.Vector3(
+      this.snapToGrid(vec.x, gridSize),
+      this.snapToGrid(vec.y, gridSize),
+      this.snapToGrid(vec.z, gridSize)
+    );
+  }
+};
+
+/* Auto3D - Undo/Redo History */
+var Auto3D = Auto3D || {};
+
+Auto3D.History = (function() {
+  var undoStack = [];
+  var redoStack = [];
+  var MAX_STATES = 50;
+
+  function serializeState() {
+    var curves = Auto3D.state ? Auto3D.state.curves : new Map();
+    var data = [];
+    curves.forEach(function(curve, id) {
+      data.push({
+        id: curve.id,
+        name: curve.name,
+        type: curve.type,
+        plane: curve.plane,
+        points: curve.points.map(function(p) { return { x: p.x, y: p.y, z: p.z }; }),
+        closed: curve.closed,
+        visible: curve.visible,
+        color: curve.color
+      });
+    });
+    return JSON.stringify(data);
+  }
+
+  function restoreState(json) {
+    if (!Auto3D.CurveTools) return;
+    var data = JSON.parse(json);
+    Auto3D.CurveTools.clearAll();
+    data.forEach(function(c) {
+      var points = c.points.map(function(p) { return new THREE.Vector3(p.x, p.y, p.z); });
+      Auto3D.CurveTools.restoreCurve(c, points);
+    });
+  }
+
+  return {
+    save: function() {
+      var state = serializeState();
+      undoStack.push(state);
+      if (undoStack.length > MAX_STATES) undoStack.shift();
+      redoStack = [];
+    },
+
+    undo: function() {
+      if (undoStack.length < 2) return;
+      var current = undoStack.pop();
+      redoStack.push(current);
+      var prev = undoStack[undoStack.length - 1];
+      restoreState(prev);
+    },
+
+    redo: function() {
+      if (redoStack.length === 0) return;
+      var state = redoStack.pop();
+      undoStack.push(state);
+      restoreState(state);
+    },
+
+    init: function() {
+      undoStack = [];
+      redoStack = [];
+      this.save();
+    }
+  };
+})();
+
+/* Auto3D - Scene Management */
+var Auto3D = Auto3D || {};
+
+Auto3D.Scene = (function() {
+  var renderer, scene, perspCamera, orthoCamera, activeCamera;
+  var orbitControls;
+  var gridHelper, groundPlane;
+  var renderCallbacks = [];
+
+  function init() {
+    var canvas = document.getElementById('viewport');
+
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
+
+    // Perspective Camera
+    perspCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 100000);
+    perspCamera.position.set(5000, 3000, 6000);
+    perspCamera.lookAt(0, 500, 0);
+
+    // Orthographic Camera
+    var aspect = window.innerWidth / window.innerHeight;
+    var frustum = 3000;
+    orthoCamera = new THREE.OrthographicCamera(
+      -frustum * aspect, frustum * aspect, frustum, -frustum, 1, 100000
+    );
+    orthoCamera.position.set(5000, 3000, 6000);
+    orthoCamera.lookAt(0, 500, 0);
+
+    activeCamera = perspCamera;
+
+    // Orbit Controls
+    orbitControls = new THREE.OrbitControls(perspCamera, canvas);
+    orbitControls.target.set(0, 500, 0);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.08;
+    orbitControls.minDistance = 1000;
+    orbitControls.maxDistance = 30000;
+    orbitControls.update();
+
+    // Lighting
+    setupDefaultLighting();
+
+    // Grid
+    setupGrid();
+
+    // Ground
+    var groundGeo = new THREE.PlaneGeometry(40000, 40000);
+    var groundMat = new THREE.MeshStandardMaterial({
+      color: 0x222222,
+      roughness: 0.8,
+      metalness: 0.2
+    });
+    groundPlane = new THREE.Mesh(groundGeo, groundMat);
+    groundPlane.rotation.x = -Math.PI / 2;
+    groundPlane.position.y = -1;
+    groundPlane.receiveShadow = true;
+    scene.add(groundPlane);
+
+    // Resize
+    window.addEventListener('resize', onResize);
+
+    // Render loop
+    animate();
+  }
+
+  function setupDefaultLighting() {
+    // Remove existing lights
+    scene.children = scene.children.filter(function(c) { return !c.isLight; });
+
+    var ambient = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambient);
+
+    var hemi = new THREE.HemisphereLight(0x8888aa, 0x444422, 0.6);
+    scene.add(hemi);
+
+    var key = new THREE.DirectionalLight(0xffffff, 1.2);
+    key.position.set(5000, 8000, 3000);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -5000;
+    key.shadow.camera.right = 5000;
+    key.shadow.camera.top = 5000;
+    key.shadow.camera.bottom = -5000;
+    scene.add(key);
+
+    var fill = new THREE.DirectionalLight(0x6688cc, 0.4);
+    fill.position.set(-3000, 4000, -2000);
+    scene.add(fill);
+
+    var rim = new THREE.DirectionalLight(0xffffff, 0.3);
+    rim.position.set(-2000, 3000, 5000);
+    scene.add(rim);
+  }
+
+  function setupGrid() {
+    if (gridHelper) scene.remove(gridHelper);
+
+    gridHelper = new THREE.Group();
+
+    var mainGrid = new THREE.GridHelper(10000, 20, 0x444444, 0x333333);
+    mainGrid.position.y = 0;
+    gridHelper.add(mainGrid);
+
+    // Axes
+    var axesMat = {
+      x: new THREE.LineBasicMaterial({ color: 0xff4444, opacity: 0.5, transparent: true }),
+      y: new THREE.LineBasicMaterial({ color: 0x44ff44, opacity: 0.5, transparent: true }),
+      z: new THREE.LineBasicMaterial({ color: 0x4444ff, opacity: 0.5, transparent: true })
+    };
+    var len = 5000;
+
+    var xGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-len,0,0), new THREE.Vector3(len,0,0)]);
+    gridHelper.add(new THREE.Line(xGeo, axesMat.x));
+
+    var zGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,-len), new THREE.Vector3(0,0,len)]);
+    gridHelper.add(new THREE.Line(zGeo, axesMat.z));
+
+    scene.add(gridHelper);
+  }
+
+  function onResize() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    renderer.setSize(w, h);
+
+    perspCamera.aspect = w / h;
+    perspCamera.updateProjectionMatrix();
+
+    var aspect = w / h;
+    var frustum = orthoCamera.top;
+    orthoCamera.left = -frustum * aspect;
+    orthoCamera.right = frustum * aspect;
+    orthoCamera.updateProjectionMatrix();
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    if (activeCamera === perspCamera) {
+      orbitControls.update();
+    }
+    renderCallbacks.forEach(function(cb) { cb(); });
+    renderer.render(scene, activeCamera);
+  }
+
+  return {
+    init: init,
+    get renderer() { return renderer; },
+    get scene() { return scene; },
+    get camera() { return activeCamera; },
+    get perspCamera() { return perspCamera; },
+    get orthoCamera() { return orthoCamera; },
+    get controls() { return orbitControls; },
+    get groundPlane() { return groundPlane; },
+
+    setActiveCamera: function(cam) { activeCamera = cam; },
+
+    setupDefaultLighting: setupDefaultLighting,
+
+    setOrthoFrustum: function(size) {
+      var aspect = window.innerWidth / window.innerHeight;
+      orthoCamera.left = -size * aspect;
+      orthoCamera.right = size * aspect;
+      orthoCamera.top = size;
+      orthoCamera.bottom = -size;
+      orthoCamera.updateProjectionMatrix();
+    },
+
+    onRender: function(cb) { renderCallbacks.push(cb); },
+
+    removeRenderCallback: function(cb) {
+      var idx = renderCallbacks.indexOf(cb);
+      if (idx >= 0) renderCallbacks.splice(idx, 1);
+    }
+  };
+})();
+
+/* Auto3D - View Mode Manager */
+var Auto3D = Auto3D || {};
+
+Auto3D.Views = (function() {
+  var currentView = 'perspective';
+  var transitioning = false;
+  var transitionStart = null;
+  var transitionDuration = 400;
+  var fromPos, fromTarget, toPos, toTarget;
+
+  var viewConfigs = {
+    perspective: {
+      useOrtho: false,
+      position: new THREE.Vector3(5000, 3000, 6000),
+      target: new THREE.Vector3(0, 500, 0),
+      label: 'PERSPECTIVE'
+    },
+    side: {
+      useOrtho: true,
+      position: new THREE.Vector3(10000, 700, 0),
+      target: new THREE.Vector3(0, 700, 0),
+      frustum: 3000,
+      label: 'SIDE VIEW',
+      drawPlane: 'xz-to-xy'
+    },
+    front: {
+      useOrtho: true,
+      position: new THREE.Vector3(0, 700, 10000),
+      target: new THREE.Vector3(0, 700, 0),
+      frustum: 2500,
+      label: 'FRONT VIEW',
+      drawPlane: 'yz'
+    },
+    top: {
+      useOrtho: true,
+      position: new THREE.Vector3(0, 10000, 0),
+      target: new THREE.Vector3(0, 0, 0),
+      frustum: 4000,
+      label: 'TOP VIEW',
+      drawPlane: 'xz'
+    },
+    rear: {
+      useOrtho: true,
+      position: new THREE.Vector3(0, 700, -10000),
+      target: new THREE.Vector3(0, 700, 0),
+      frustum: 2500,
+      label: 'REAR VIEW',
+      drawPlane: 'yz'
+    }
+  };
+
+  function getDrawPlane(viewName) {
+    var cfg = viewConfigs[viewName];
+    if (!cfg || !cfg.drawPlane) return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+    switch (cfg.drawPlane) {
+      case 'xz-to-xy':
+        // Side view: draw on XY plane (Z=0) — vertical plane facing the camera
+        return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      case 'yz':
+        // Front/Rear view: draw on YZ plane (X=0)
+        return new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
+      case 'xz':
+        // Top view: draw on XZ plane (Y=0)
+        return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      default:
+        return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    }
+  }
+
+  function switchView(viewName) {
+    if (viewName === currentView || transitioning) return;
+
+    var cfg = viewConfigs[viewName];
+    if (!cfg) return;
+
+    var controls = Auto3D.Scene.controls;
+    var activeCamera;
+
+    if (cfg.useOrtho) {
+      activeCamera = Auto3D.Scene.orthoCamera;
+      Auto3D.Scene.setOrthoFrustum(cfg.frustum);
+      controls.enabled = false;
+    } else {
+      activeCamera = Auto3D.Scene.perspCamera;
+      controls.enabled = true;
+    }
+
+    // Animate transition
+    fromPos = activeCamera.position.clone();
+    fromTarget = controls.target.clone();
+    toPos = cfg.position.clone();
+    toTarget = cfg.target.clone();
+    transitionStart = performance.now();
+    transitioning = true;
+
+    Auto3D.Scene.setActiveCamera(activeCamera);
+    currentView = viewName;
+
+    // Update UI
+    document.getElementById('view-label').textContent = cfg.label;
+    document.getElementById('status-view').textContent = 'View: ' + viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    document.querySelectorAll('.view-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.view === viewName);
+    });
+  }
+
+  function updateTransition() {
+    if (!transitioning) return;
+
+    var elapsed = performance.now() - transitionStart;
+    var t = Math.min(elapsed / transitionDuration, 1);
+    // Smooth step
+    t = t * t * (3 - 2 * t);
+
+    var cam = Auto3D.Scene.camera;
+    cam.position.lerpVectors(fromPos, toPos, t);
+
+    var controls = Auto3D.Scene.controls;
+    controls.target.lerpVectors(fromTarget, toTarget, t);
+
+    if (currentView !== 'perspective') {
+      cam.lookAt(controls.target);
+    }
+
+    if (t >= 1) {
+      transitioning = false;
+      if (currentView === 'perspective') {
+        controls.update();
+      }
+    }
+  }
+
+  function init() {
+    // View buttons
+    document.querySelectorAll('.view-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        switchView(btn.dataset.view);
+      });
+    });
+
+    // Register render callback for transitions
+    Auto3D.Scene.onRender(updateTransition);
+  }
+
+  return {
+    init: init,
+    switchView: switchView,
+    getCurrentView: function() { return currentView; },
+    getDrawPlane: function() { return getDrawPlane(currentView); },
+    getViewConfig: function() { return viewConfigs[currentView]; }
+  };
+})();
+
+/* Auto3D - Car Dimensions Scaffold */
+var Auto3D = Auto3D || {};
+
+Auto3D.CarDimensions = (function() {
+  var scaffoldGroup;
+  var wheelGroups = [];
+
+  var dimensions = {
+    wheelbase: 2700,
+    width: 1850,
+    height: 1450,
+    frontOverhang: 900,
+    rearOverhang: 1000,
+    groundClearance: 150
+  };
+
+  function getTotalLength() {
+    return dimensions.frontOverhang + dimensions.wheelbase + dimensions.rearOverhang;
+  }
+
+  function buildScaffold() {
+    if (scaffoldGroup) {
+      Auto3D.Scene.scene.remove(scaffoldGroup);
+    }
+
+    scaffoldGroup = new THREE.Group();
+    scaffoldGroup.name = 'scaffold';
+
+    var mat = new THREE.LineBasicMaterial({ color: 0x0096ff, opacity: 0.3, transparent: true });
+    var matDim = new THREE.LineBasicMaterial({ color: 0x0096ff, opacity: 0.15, transparent: true });
+
+    var L = getTotalLength();
+    var W = dimensions.width;
+    var H = dimensions.height;
+    var GC = dimensions.groundClearance;
+    var WB = dimensions.wheelbase;
+    var FO = dimensions.frontOverhang;
+
+    // Car centered at origin, front facing +Z
+    var halfW = W / 2;
+    var frontZ = L / 2;
+    var rearZ = -L / 2;
+    var frontAxleZ = frontZ - FO;
+    var rearAxleZ = frontAxleZ - WB;
+
+    // Bounding box wireframe
+    var boxPoints = [
+      // Bottom rectangle
+      new THREE.Vector3(-halfW, GC, frontZ),
+      new THREE.Vector3(halfW, GC, frontZ),
+      new THREE.Vector3(halfW, GC, rearZ),
+      new THREE.Vector3(-halfW, GC, rearZ),
+      new THREE.Vector3(-halfW, GC, frontZ),
+    ];
+    var boxGeo = new THREE.BufferGeometry().setFromPoints(boxPoints);
+    scaffoldGroup.add(new THREE.Line(boxGeo, matDim));
+
+    // Top rectangle
+    var topPoints = [
+      new THREE.Vector3(-halfW, H, frontZ),
+      new THREE.Vector3(halfW, H, frontZ),
+      new THREE.Vector3(halfW, H, rearZ),
+      new THREE.Vector3(-halfW, H, rearZ),
+      new THREE.Vector3(-halfW, H, frontZ),
+    ];
+    var topGeo = new THREE.BufferGeometry().setFromPoints(topPoints);
+    scaffoldGroup.add(new THREE.Line(topGeo, matDim));
+
+    // Vertical edges
+    var verticals = [
+      [[-halfW, GC, frontZ], [-halfW, H, frontZ]],
+      [[halfW, GC, frontZ], [halfW, H, frontZ]],
+      [[halfW, GC, rearZ], [halfW, H, rearZ]],
+      [[-halfW, GC, rearZ], [-halfW, H, rearZ]]
+    ];
+    verticals.forEach(function(pair) {
+      var geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(pair[0][0], pair[0][1], pair[0][2]),
+        new THREE.Vector3(pair[1][0], pair[1][1], pair[1][2])
+      ]);
+      scaffoldGroup.add(new THREE.Line(geo, matDim));
+    });
+
+    // Center lines
+    var clLong = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, GC, frontZ + 200),
+      new THREE.Vector3(0, GC, rearZ - 200)
+    ]);
+    scaffoldGroup.add(new THREE.Line(clLong, mat));
+
+    // Axle lines
+    var frontAxleGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-halfW - 100, GC, frontAxleZ),
+      new THREE.Vector3(halfW + 100, GC, frontAxleZ)
+    ]);
+    scaffoldGroup.add(new THREE.Line(frontAxleGeo, mat));
+
+    var rearAxleGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-halfW - 100, GC, rearAxleZ),
+      new THREE.Vector3(halfW + 100, GC, rearAxleZ)
+    ]);
+    scaffoldGroup.add(new THREE.Line(rearAxleGeo, mat));
+
+    // Wheels (simple circles)
+    var wheelRadius = GC * 0.9;
+    var tireRadius = 330;
+    var wheelPositions = [
+      [-halfW + 100, tireRadius, frontAxleZ],
+      [halfW - 100, tireRadius, frontAxleZ],
+      [-halfW + 100, tireRadius, rearAxleZ],
+      [halfW - 100, tireRadius, rearAxleZ]
+    ];
+
+    wheelGroups = [];
+    wheelPositions.forEach(function(pos) {
+      var wheelGeo = new THREE.RingGeometry(tireRadius - 30, tireRadius, 32);
+      var wheelMat = new THREE.MeshBasicMaterial({
+        color: 0x0096ff, opacity: 0.2, transparent: true, side: THREE.DoubleSide
+      });
+      var wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.position.set(pos[0], pos[1], pos[2]);
+      wheel.rotation.y = Math.PI / 2;
+
+      // Tire outline
+      var circleGeo = new THREE.BufferGeometry().setFromPoints(
+        new THREE.Path().absarc(0, 0, tireRadius, 0, Math.PI * 2).getPoints(32)
+          .map(function(p) { return new THREE.Vector3(0, p.y, p.x); })
+      );
+      var circleLine = new THREE.Line(circleGeo, mat);
+      circleLine.position.set(pos[0], pos[1], pos[2]);
+
+      scaffoldGroup.add(wheel);
+      scaffoldGroup.add(circleLine);
+      wheelGroups.push(wheel);
+    });
+
+    // Ground clearance line
+    var gcLineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-halfW - 200, GC, 0),
+      new THREE.Vector3(halfW + 200, GC, 0)
+    ]);
+    var gcMat = new THREE.LineDashedMaterial({
+      color: 0x0096ff, opacity: 0.2, transparent: true,
+      dashSize: 50, gapSize: 30
+    });
+    var gcLine = new THREE.Line(gcLineGeo, gcMat);
+    gcLine.computeLineDistances();
+    scaffoldGroup.add(gcLine);
+
+    Auto3D.Scene.scene.add(scaffoldGroup);
+  }
+
+  function updateDimension(key, value) {
+    if (dimensions[key] !== undefined) {
+      dimensions[key] = parseInt(value);
+      buildScaffold();
+    }
+  }
+
+  function init() {
+    // Wire up sliders
+    var sliderIds = {
+      'dim-wheelbase': 'wheelbase',
+      'dim-width': 'width',
+      'dim-height': 'height',
+      'dim-front-overhang': 'frontOverhang',
+      'dim-rear-overhang': 'rearOverhang',
+      'dim-ground-clearance': 'groundClearance'
+    };
+
+    Object.keys(sliderIds).forEach(function(sliderId) {
+      var slider = document.getElementById(sliderId);
+      var dimKey = sliderIds[sliderId];
+      if (slider) {
+        slider.addEventListener('input', function() {
+          updateDimension(dimKey, slider.value);
+          var valSpan = document.querySelector('.dim-val[data-for="' + sliderId + '"]');
+          if (valSpan) valSpan.textContent = slider.value;
+        });
+      }
+    });
+
+    buildScaffold();
+  }
+
+  return {
+    init: init,
+    getDimensions: function() { return Object.assign({}, dimensions); },
+    getTotalLength: getTotalLength,
+    updateDimension: updateDimension,
+    rebuild: buildScaffold
+  };
+})();
+
+/* Auto3D - Curve Drawing and Editing Tools */
+var Auto3D = Auto3D || {};
+
+Auto3D.CurveTools = (function() {
+  var curves = new Map();
+  var selectedCurveIds = new Set();
+  var drawingPoints = [];
+  var previewLine = null;
+  var previewGroup = null;
+  var controlPointSpheres = [];
+  var selectedPointIndex = -1;
+  var curveColorIndex = 0;
+  var curveColors = [0xff6b6b, 0x51cf66, 0x339af0, 0xfcc419, 0xcc5de8, 0x20c997, 0xff922b, 0x74c0fc];
+
+  function getNextColor() {
+    var color = curveColors[curveColorIndex % curveColors.length];
+    curveColorIndex++;
+    return color;
+  }
+
+  function createCurveVisual(curveData) {
+    var group = new THREE.Group();
+    group.name = 'curve_' + curveData.id;
+
+    // Create spline
+    if (curveData.points.length < 2) return group;
+
+    var spline = new THREE.CatmullRomCurve3(curveData.points, curveData.closed, 'catmullrom', 0.5);
+    var sampleCount = Math.max(curveData.points.length * 20, 100);
+    var splinePoints = spline.getPoints(sampleCount);
+
+    // Line
+    var lineGeo = new THREE.BufferGeometry().setFromPoints(splinePoints);
+    var lineMat = new THREE.LineBasicMaterial({
+      color: curveData.color,
+      linewidth: 2
+    });
+    var line = new THREE.Line(lineGeo, lineMat);
+    group.add(line);
+
+    // Mirror line (if enabled)
+    if (Auto3D.state && Auto3D.state.mirror && curveData.plane !== 'top') {
+      var mirrorPoints = splinePoints.map(function(p) {
+        return new THREE.Vector3(-p.x, p.y, p.z);
+      });
+      var mirrorGeo = new THREE.BufferGeometry().setFromPoints(mirrorPoints);
+      var mirrorMat = new THREE.LineBasicMaterial({
+        color: curveData.color,
+        linewidth: 1,
+        opacity: 0.4,
+        transparent: true
+      });
+      group.add(new THREE.Line(mirrorGeo, mirrorMat));
+    }
+
+    // Control points
+    curveData.points.forEach(function(pt, idx) {
+      var sphereGeo = new THREE.SphereGeometry(20, 8, 8);
+      var sphereMat = new THREE.MeshBasicMaterial({ color: curveData.color });
+      var sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      sphere.position.copy(pt);
+      sphere.userData.curveId = curveData.id;
+      sphere.userData.pointIndex = idx;
+      group.add(sphere);
+    });
+
+    group.userData.curveId = curveData.id;
+    return group;
+  }
+
+  function updateCurveVisual(curveId) {
+    var curveData = curves.get(curveId);
+    if (!curveData) return;
+
+    // Remove old visual
+    var scene = Auto3D.Scene.scene;
+    var old = scene.getObjectByName('curve_' + curveId);
+    if (old) {
+      scene.remove(old);
+    }
+
+    // Create new visual
+    if (curveData.points.length >= 2) {
+      var visual = createCurveVisual(curveData);
+      scene.add(visual);
+    }
+  }
+
+  function updateAllVisuals() {
+    curves.forEach(function(curveData, id) {
+      updateCurveVisual(id);
+    });
+  }
+
+  function highlightSelected() {
+    var scene = Auto3D.Scene.scene;
+    curves.forEach(function(curveData, id) {
+      var group = scene.getObjectByName('curve_' + id);
+      if (!group) return;
+      var isSelected = selectedCurveIds.has(id);
+      group.children.forEach(function(child) {
+        if (child.isLine && child.material) {
+          child.material.color.setHex(isSelected ? 0xffffff : curveData.color);
+        }
+      });
+    });
+  }
+
+  function addPointToDrawing(point) {
+    var snap = Auto3D.state && Auto3D.state.snap;
+    if (snap) {
+      point = Auto3D.Utils.snapVec3ToGrid(point, 50);
+    }
+    drawingPoints.push(point.clone());
+    updatePreview();
+  }
+
+  function updatePreview() {
+    var scene = Auto3D.Scene.scene;
+    if (previewGroup) {
+      scene.remove(previewGroup);
+    }
+
+    if (drawingPoints.length === 0) return;
+
+    previewGroup = new THREE.Group();
+    previewGroup.name = 'drawPreview';
+
+    // Points
+    drawingPoints.forEach(function(pt) {
+      var geo = new THREE.SphereGeometry(25, 8, 8);
+      var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      var sphere = new THREE.Mesh(geo, mat);
+      sphere.position.copy(pt);
+      previewGroup.add(sphere);
+    });
+
+    // Preview curve
+    if (drawingPoints.length >= 2) {
+      var spline = new THREE.CatmullRomCurve3(drawingPoints, false, 'catmullrom', 0.5);
+      var pts = spline.getPoints(drawingPoints.length * 20);
+      var geo = new THREE.BufferGeometry().setFromPoints(pts);
+      var mat = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.7, transparent: true });
+      previewGroup.add(new THREE.Line(geo, mat));
+    }
+
+    scene.add(previewGroup);
+  }
+
+  function finishDrawing() {
+    if (drawingPoints.length < 2) {
+      cancelDrawing();
+      return null;
+    }
+
+    var id = Auto3D.Utils.generateId();
+    var currentView = Auto3D.Views.getCurrentView();
+    var planeType = 'free';
+    if (currentView === 'side') planeType = 'side';
+    else if (currentView === 'front') planeType = 'front';
+    else if (currentView === 'rear') planeType = 'rear';
+    else if (currentView === 'top') planeType = 'top';
+
+    var curveData = {
+      id: id,
+      name: 'Curve ' + (curves.size + 1),
+      type: 'profile',
+      plane: planeType,
+      points: drawingPoints.map(function(p) { return p.clone(); }),
+      closed: false,
+      visible: true,
+      color: getNextColor()
+    };
+
+    curves.set(id, curveData);
+    updateCurveVisual(id);
+    cancelDrawing();
+    updateCurveList();
+
+    Auto3D.History.save();
+    updateStatusCurveCount();
+
+    return curveData;
+  }
+
+  function cancelDrawing() {
+    drawingPoints = [];
+    if (previewGroup) {
+      Auto3D.Scene.scene.remove(previewGroup);
+      previewGroup = null;
+    }
+  }
+
+  function getWorldPosition(event) {
+    var currentView = Auto3D.Views.getCurrentView();
+    var plane = Auto3D.Views.getDrawPlane();
+    return Auto3D.Utils.screenToWorld(event, Auto3D.Scene.camera, plane);
+  }
+
+  function findClickedCurvePoint(event) {
+    var scene = Auto3D.Scene.scene;
+    var spheres = [];
+    curves.forEach(function(curveData, id) {
+      var group = scene.getObjectByName('curve_' + id);
+      if (group) {
+        group.children.forEach(function(child) {
+          if (child.isMesh && child.userData.curveId) {
+            spheres.push(child);
+          }
+        });
+      }
+    });
+    return Auto3D.Utils.screenToMeshIntersection(event, Auto3D.Scene.camera, spheres);
+  }
+
+  function findClickedCurve(event) {
+    var scene = Auto3D.Scene.scene;
+    var lines = [];
+    curves.forEach(function(curveData, id) {
+      var group = scene.getObjectByName('curve_' + id);
+      if (group) {
+        group.children.forEach(function(child) {
+          if (child.isLine) {
+            child.userData.curveId = id;
+            lines.push(child);
+          }
+        });
+      }
+    });
+
+    var mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    var raycaster = new THREE.Raycaster();
+    raycaster.params.Line = { threshold: 50 };
+    raycaster.setFromCamera(mouse, Auto3D.Scene.camera);
+    var intersects = raycaster.intersectObjects(lines, false);
+    return intersects.length > 0 ? intersects[0] : null;
+  }
+
+  function selectCurve(id, additive) {
+    if (!additive) {
+      selectedCurveIds.clear();
+    }
+    if (id) {
+      if (selectedCurveIds.has(id)) {
+        selectedCurveIds.delete(id);
+      } else {
+        selectedCurveIds.add(id);
+      }
+    }
+    highlightSelected();
+    updateCurveList();
+  }
+
+  function deleteCurve(id) {
+    var scene = Auto3D.Scene.scene;
+    var group = scene.getObjectByName('curve_' + id);
+    if (group) scene.remove(group);
+    curves.delete(id);
+    selectedCurveIds.delete(id);
+    updateCurveList();
+    updateStatusCurveCount();
+    Auto3D.History.save();
+  }
+
+  function deleteSelectedCurves() {
+    selectedCurveIds.forEach(function(id) {
+      var scene = Auto3D.Scene.scene;
+      var group = scene.getObjectByName('curve_' + id);
+      if (group) scene.remove(group);
+      curves.delete(id);
+    });
+    selectedCurveIds.clear();
+    updateCurveList();
+    updateStatusCurveCount();
+    Auto3D.History.save();
+  }
+
+  function updateCurveList() {
+    var list = document.getElementById('curve-list');
+    if (!list) return;
+    list.innerHTML = '';
+    curves.forEach(function(curveData, id) {
+      var div = document.createElement('div');
+      div.className = 'curve-item' + (selectedCurveIds.has(id) ? ' selected' : '');
+      div.innerHTML = '<span class="curve-color" style="background:#' + curveData.color.toString(16).padStart(6, '0') + '"></span>' + curveData.name;
+      div.addEventListener('click', function(e) {
+        selectCurve(id, e.shiftKey);
+      });
+      list.appendChild(div);
+    });
+  }
+
+  function updateStatusCurveCount() {
+    var el = document.getElementById('status-curves');
+    if (el) el.textContent = 'Curves: ' + curves.size;
+  }
+
+  function handleMouseDown(event) {
+    if (event.button !== 0) return;
+    if (isOverUI(event)) return;
+
+    var tool = Auto3D.state.tool;
+
+    if (tool === 'draw') {
+      var pos = getWorldPosition(event);
+      if (pos) {
+        addPointToDrawing(pos);
+      }
+    } else if (tool === 'select') {
+      var hit = findClickedCurve(event);
+      if (hit && hit.object.userData.curveId) {
+        selectCurve(hit.object.userData.curveId, event.shiftKey);
+      } else {
+        selectCurve(null, false);
+      }
+    } else if (tool === 'edit') {
+      var ptHit = findClickedCurvePoint(event);
+      if (ptHit && ptHit.object.userData.curveId) {
+        selectedCurveIds.clear();
+        selectedCurveIds.add(ptHit.object.userData.curveId);
+        selectedPointIndex = ptHit.object.userData.pointIndex;
+        highlightSelected();
+        Auto3D.Scene.controls.enabled = false;
+      } else {
+        selectedPointIndex = -1;
+        Auto3D.Scene.controls.enabled = true;
+      }
+    } else if (tool === 'erase') {
+      var eraseLine = findClickedCurve(event);
+      if (eraseLine && eraseLine.object.userData.curveId) {
+        deleteCurve(eraseLine.object.userData.curveId);
+      }
+    } else if (tool === 'surface') {
+      var surfHit = findClickedCurve(event);
+      if (surfHit && surfHit.object.userData.curveId) {
+        selectCurve(surfHit.object.userData.curveId, true);
+      }
+    }
+  }
+
+  function handleMouseMove(event) {
+    var tool = Auto3D.state.tool;
+
+    if (tool === 'edit' && selectedPointIndex >= 0 && event.buttons === 1) {
+      // Drag point
+      var pos = getWorldPosition(event);
+      if (pos) {
+        var snap = Auto3D.state && Auto3D.state.snap;
+        if (snap) pos = Auto3D.Utils.snapVec3ToGrid(pos, 50);
+
+        selectedCurveIds.forEach(function(id) {
+          var curveData = curves.get(id);
+          if (curveData && curveData.points[selectedPointIndex]) {
+            curveData.points[selectedPointIndex].copy(pos);
+            updateCurveVisual(id);
+          }
+        });
+      }
+    }
+  }
+
+  function handleMouseUp(event) {
+    if (Auto3D.state.tool === 'edit' && selectedPointIndex >= 0) {
+      selectedPointIndex = -1;
+      Auto3D.Scene.controls.enabled = (Auto3D.Views.getCurrentView() === 'perspective');
+      Auto3D.History.save();
+    }
+  }
+
+  function handleDoubleClick(event) {
+    if (Auto3D.state.tool === 'draw' && drawingPoints.length >= 2) {
+      finishDrawing();
+    }
+  }
+
+  function handleKeyDown(event) {
+    if (Auto3D.state.tool === 'draw') {
+      if (event.key === 'Enter' || event.key === 'Return') {
+        finishDrawing();
+      } else if (event.key === 'Escape') {
+        cancelDrawing();
+      }
+    }
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (Auto3D.state.tool === 'select' || Auto3D.state.tool === 'erase') {
+        deleteSelectedCurves();
+      }
+    }
+  }
+
+  function isOverUI(event) {
+    var el = event.target;
+    while (el) {
+      if (el.id === 'toolbar' || el.id === 'panel-left' || el.id === 'panel-right' || el.id === 'status-bar') {
+        return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  function init() {
+    var canvas = document.getElementById('viewport');
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('dblclick', handleDoubleClick);
+    document.addEventListener('keydown', handleKeyDown);
+  }
+
+  return {
+    init: init,
+    getCurves: function() { return curves; },
+    getSelectedIds: function() { return selectedCurveIds; },
+    finishDrawing: finishDrawing,
+    cancelDrawing: cancelDrawing,
+    updateAllVisuals: updateAllVisuals,
+    updateCurveList: updateCurveList,
+
+    clearAll: function() {
+      var scene = Auto3D.Scene.scene;
+      curves.forEach(function(curveData, id) {
+        var group = scene.getObjectByName('curve_' + id);
+        if (group) scene.remove(group);
+      });
+      curves.clear();
+      selectedCurveIds.clear();
+      updateCurveList();
+      updateStatusCurveCount();
+    },
+
+    restoreCurve: function(data, points) {
+      var curveData = {
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        plane: data.plane,
+        points: points,
+        closed: data.closed,
+        visible: data.visible,
+        color: data.color
+      };
+      curves.set(data.id, curveData);
+      updateCurveVisual(data.id);
+      updateCurveList();
+      updateStatusCurveCount();
+    }
+  };
+})();
+
+/* Auto3D - Surface Generation Engine */
+var Auto3D = Auto3D || {};
+
+Auto3D.SurfaceEngine = (function() {
+  var surfaces = new Map();
+
+  function loftCurves(curveDataArray, resolution) {
+    resolution = resolution || 32;
+
+    if (curveDataArray.length < 2) return null;
+
+    // Create splines from each curve's control points
+    var splines = curveDataArray.map(function(cd) {
+      return new THREE.CatmullRomCurve3(cd.points, cd.closed, 'catmullrom', 0.5);
+    });
+
+    // Sample each spline at uniform intervals
+    var crossSections = splines.map(function(spline) {
+      var pts = [];
+      for (var i = 0; i <= resolution; i++) {
+        pts.push(spline.getPoint(i / resolution));
+      }
+      return pts;
+    });
+
+    // Build geometry by connecting adjacent cross-sections
+    var positions = [];
+    var normals = [];
+    var uvs = [];
+    var indices = [];
+
+    var rows = crossSections.length;
+    var cols = resolution + 1;
+
+    // Create vertex grid
+    for (var row = 0; row < rows; row++) {
+      for (var col = 0; col < cols; col++) {
+        var pt = crossSections[row][col];
+        positions.push(pt.x, pt.y, pt.z);
+        uvs.push(col / resolution, row / (rows - 1));
+        // Temporary normal (will compute properly)
+        normals.push(0, 1, 0);
+      }
+    }
+
+    // Create triangle indices
+    for (var row = 0; row < rows - 1; row++) {
+      for (var col = 0; col < cols - 1; col++) {
+        var a = row * cols + col;
+        var b = row * cols + col + 1;
+        var c = (row + 1) * cols + col;
+        var d = (row + 1) * cols + col + 1;
+
+        indices.push(a, b, c);
+        indices.push(b, d, c);
+      }
+    }
+
+    // Build BufferGeometry
+    var geometry = new THREE.BufferGeometry();
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.computeVertexNormals();
+
+    return geometry;
+  }
+
+  function createMirroredGeometry(geometry) {
+    var mirrorGeo = geometry.clone();
+    var pos = mirrorGeo.getAttribute('position');
+    for (var i = 0; i < pos.count; i++) {
+      pos.setX(i, -pos.getX(i));
+    }
+    // Flip normals for mirrored side
+    var idx = mirrorGeo.getIndex();
+    if (idx) {
+      var arr = Array.from(idx.array);
+      for (var i = 0; i < arr.length; i += 3) {
+        var tmp = arr[i + 1];
+        arr[i + 1] = arr[i + 2];
+        arr[i + 2] = tmp;
+      }
+      mirrorGeo.setIndex(arr);
+    }
+    mirrorGeo.computeVertexNormals();
+    return mirrorGeo;
+  }
+
+  function generateSurface(curveIds, options) {
+    options = options || {};
+    var resolution = options.resolution || 32;
+    var mirror = options.mirror !== false;
+
+    // Get curve data in order
+    var curvesMap = Auto3D.CurveTools.getCurves();
+    var curveDataArray = [];
+    curveIds.forEach(function(id) {
+      var cd = curvesMap.get(id);
+      if (cd) curveDataArray.push(cd);
+    });
+
+    if (curveDataArray.length < 2) return null;
+
+    var geometry = loftCurves(curveDataArray, resolution);
+    if (!geometry) return null;
+
+    // Material
+    var material = Auto3D.Materials ? Auto3D.Materials.getActiveMaterial() : new THREE.MeshPhysicalMaterial({
+      color: 0xc0392b,
+      metalness: 0.9,
+      roughness: 0.2,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1
+    });
+
+    var id = Auto3D.Utils.generateId();
+
+    // Main surface mesh
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.name = 'surface_' + id;
+
+    var group = new THREE.Group();
+    group.name = 'surfaceGroup_' + id;
+    group.add(mesh);
+
+    // Mirror
+    if (mirror) {
+      var mirrorGeo = createMirroredGeometry(geometry);
+      var mirrorMesh = new THREE.Mesh(mirrorGeo, material);
+      mirrorMesh.castShadow = true;
+      mirrorMesh.receiveShadow = true;
+      group.add(mirrorMesh);
+    }
+
+    Auto3D.Scene.scene.add(group);
+
+    var surfaceData = {
+      id: id,
+      name: 'Surface ' + (surfaces.size + 1),
+      curveIds: curveIds.slice(),
+      resolution: resolution,
+      mirror: mirror,
+      group: group,
+      mesh: mesh,
+      material: material
+    };
+
+    surfaces.set(id, surfaceData);
+    updateSurfaceList();
+
+    return surfaceData;
+  }
+
+  function removeSurface(id) {
+    var sd = surfaces.get(id);
+    if (sd) {
+      Auto3D.Scene.scene.remove(sd.group);
+      sd.group.children.forEach(function(child) {
+        if (child.geometry) child.geometry.dispose();
+      });
+      surfaces.delete(id);
+      updateSurfaceList();
+    }
+  }
+
+  function regenerateSurface(id) {
+    var sd = surfaces.get(id);
+    if (!sd) return;
+    var curveIds = sd.curveIds;
+    var resolution = sd.resolution;
+    var mirror = sd.mirror;
+    var material = sd.material;
+    removeSurface(id);
+    // Re-generate with same settings
+    var curvesMap = Auto3D.CurveTools.getCurves();
+    var curveDataArray = [];
+    curveIds.forEach(function(cid) {
+      var cd = curvesMap.get(cid);
+      if (cd) curveDataArray.push(cd);
+    });
+    if (curveDataArray.length < 2) return;
+
+    var geometry = loftCurves(curveDataArray, resolution);
+    if (!geometry) return;
+
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    var group = new THREE.Group();
+    group.name = 'surfaceGroup_' + id;
+    group.add(mesh);
+
+    if (mirror) {
+      var mirrorGeo = createMirroredGeometry(geometry);
+      var mirrorMesh = new THREE.Mesh(mirrorGeo, material);
+      mirrorMesh.castShadow = true;
+      mirrorMesh.receiveShadow = true;
+      group.add(mirrorMesh);
+    }
+
+    Auto3D.Scene.scene.add(group);
+
+    surfaces.set(id, {
+      id: id,
+      name: sd.name,
+      curveIds: curveIds,
+      resolution: resolution,
+      mirror: mirror,
+      group: group,
+      mesh: mesh,
+      material: material
+    });
+  }
+
+  function updateSurfaceList() {
+    var list = document.getElementById('surface-list');
+    if (!list) return;
+    list.innerHTML = '';
+    surfaces.forEach(function(sd, id) {
+      var div = document.createElement('div');
+      div.className = 'curve-item';
+      div.textContent = sd.name + ' (' + sd.curveIds.length + ' curves)';
+      div.addEventListener('click', function() {
+        // Could select surface for material editing
+      });
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.style.cssText = 'margin-left:auto;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;';
+      delBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        removeSurface(id);
+      });
+      div.appendChild(delBtn);
+      list.appendChild(div);
+    });
+  }
+
+  function init() {
+    // Loft button
+    var loftBtn = document.getElementById('btn-loft');
+    if (loftBtn) {
+      loftBtn.addEventListener('click', function() {
+        var selectedIds = Array.from(Auto3D.CurveTools.getSelectedIds());
+        if (selectedIds.length < 2) {
+          alert('Select at least 2 curves to loft');
+          return;
+        }
+        var resolution = parseInt(document.getElementById('surface-resolution').value) || 32;
+        generateSurface(selectedIds, {
+          resolution: resolution,
+          mirror: Auto3D.state.mirror
+        });
+      });
+    }
+
+    // Resolution slider
+    var resSlider = document.getElementById('surface-resolution');
+    if (resSlider) {
+      resSlider.addEventListener('input', function() {
+        var valSpan = document.querySelector('.dim-val[data-for="surface-resolution"]');
+        if (valSpan) valSpan.textContent = resSlider.value;
+      });
+    }
+  }
+
+  return {
+    init: init,
+    generateSurface: generateSurface,
+    removeSurface: removeSurface,
+    regenerateSurface: regenerateSurface,
+    getSurfaces: function() { return surfaces; }
+  };
+})();
+
+/* Auto3D - Environment Presets */
+var Auto3D = Auto3D || {};
+
+Auto3D.Environment = (function() {
+  var currentEnv = 'studio';
+  var envLights = [];
+
+  function clearEnvLights() {
+    var scene = Auto3D.Scene.scene;
+    envLights.forEach(function(light) {
+      scene.remove(light);
+    });
+    envLights = [];
+  }
+
+  function applyStudio() {
+    var scene = Auto3D.Scene.scene;
+    clearEnvLights();
+
+    scene.background = new THREE.Color(0x1a1a1a);
+    scene.fog = null;
+
+    // Ground
+    var ground = Auto3D.Scene.groundPlane;
+    if (ground) {
+      ground.material.color.setHex(0x222222);
+      ground.material.roughness = 0.8;
+      ground.material.metalness = 0.2;
+      ground.visible = true;
+    }
+
+    // Three-point lighting
+    var ambient = new THREE.AmbientLight(0x404040, 0.5);
+    envLights.push(ambient);
+
+    var hemi = new THREE.HemisphereLight(0x8888aa, 0x444422, 0.6);
+    envLights.push(hemi);
+
+    var key = new THREE.DirectionalLight(0xffffff, 1.2);
+    key.position.set(5000, 8000, 3000);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -5000;
+    key.shadow.camera.right = 5000;
+    key.shadow.camera.top = 5000;
+    key.shadow.camera.bottom = -5000;
+    envLights.push(key);
+
+    var fill = new THREE.DirectionalLight(0x6688cc, 0.4);
+    fill.position.set(-3000, 4000, -2000);
+    envLights.push(fill);
+
+    var rim = new THREE.DirectionalLight(0xffffff, 0.3);
+    rim.position.set(-2000, 3000, 5000);
+    envLights.push(rim);
+
+    envLights.forEach(function(l) { scene.add(l); });
+
+    Auto3D.Scene.renderer.toneMappingExposure = 1.0;
+  }
+
+  function applyOutdoor() {
+    var scene = Auto3D.Scene.scene;
+    clearEnvLights();
+
+    // Sky gradient
+    var skyTexture = Auto3D.Utils.createGradientTexture('#1a3a5c', '#87ceeb');
+    scene.background = skyTexture;
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.00003);
+
+    // Ground - road/asphalt
+    var ground = Auto3D.Scene.groundPlane;
+    if (ground) {
+      ground.material.color.setHex(0x555555);
+      ground.material.roughness = 0.9;
+      ground.material.metalness = 0.1;
+      ground.visible = true;
+    }
+
+    var ambient = new THREE.AmbientLight(0x8899aa, 0.4);
+    envLights.push(ambient);
+
+    var hemi = new THREE.HemisphereLight(0x87ceeb, 0x556633, 0.8);
+    envLights.push(hemi);
+
+    var sun = new THREE.DirectionalLight(0xffffee, 1.5);
+    sun.position.set(4000, 10000, 6000);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -5000;
+    sun.shadow.camera.right = 5000;
+    sun.shadow.camera.top = 5000;
+    sun.shadow.camera.bottom = -5000;
+    envLights.push(sun);
+
+    envLights.forEach(function(l) { scene.add(l); });
+
+    Auto3D.Scene.renderer.toneMappingExposure = 1.2;
+  }
+
+  function applyShowroom() {
+    var scene = Auto3D.Scene.scene;
+    clearEnvLights();
+
+    scene.background = new THREE.Color(0xf0f0f0);
+    scene.fog = new THREE.Fog(0xf0f0f0, 15000, 30000);
+
+    // Ground - reflective white
+    var ground = Auto3D.Scene.groundPlane;
+    if (ground) {
+      ground.material.color.setHex(0xe0e0e0);
+      ground.material.roughness = 0.15;
+      ground.material.metalness = 0.0;
+      ground.visible = true;
+    }
+
+    var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    envLights.push(ambient);
+
+    // Multiple soft lights from different directions
+    var positions = [
+      [0, 8000, 0],
+      [5000, 6000, 3000],
+      [-5000, 6000, 3000],
+      [0, 6000, -5000],
+      [3000, 4000, 5000],
+      [-3000, 4000, 5000]
+    ];
+    positions.forEach(function(pos) {
+      var light = new THREE.DirectionalLight(0xffffff, 0.4);
+      light.position.set(pos[0], pos[1], pos[2]);
+      envLights.push(light);
+    });
+
+    envLights.forEach(function(l) { scene.add(l); });
+
+    Auto3D.Scene.renderer.toneMappingExposure = 0.9;
+  }
+
+  function applySunset() {
+    var scene = Auto3D.Scene.scene;
+    clearEnvLights();
+
+    var skyTexture = Auto3D.Utils.createGradientTexture('#1a0a2e', '#ff6b35');
+    scene.background = skyTexture;
+    scene.fog = new THREE.FogExp2(0xff8855, 0.00004);
+
+    var ground = Auto3D.Scene.groundPlane;
+    if (ground) {
+      ground.material.color.setHex(0x443322);
+      ground.material.roughness = 0.7;
+      ground.material.metalness = 0.3;
+      ground.visible = true;
+    }
+
+    var ambient = new THREE.AmbientLight(0x332244, 0.3);
+    envLights.push(ambient);
+
+    var hemi = new THREE.HemisphereLight(0xff8855, 0x223355, 0.5);
+    envLights.push(hemi);
+
+    var sun = new THREE.DirectionalLight(0xff9944, 1.8);
+    sun.position.set(-6000, 2000, 4000);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -5000;
+    sun.shadow.camera.right = 5000;
+    sun.shadow.camera.top = 5000;
+    sun.shadow.camera.bottom = -5000;
+    envLights.push(sun);
+
+    var bounce = new THREE.DirectionalLight(0x6644aa, 0.3);
+    bounce.position.set(3000, 3000, -3000);
+    envLights.push(bounce);
+
+    envLights.forEach(function(l) { scene.add(l); });
+
+    Auto3D.Scene.renderer.toneMappingExposure = 1.3;
+  }
+
+  var envFunctions = {
+    studio: applyStudio,
+    outdoor: applyOutdoor,
+    showroom: applyShowroom,
+    sunset: applySunset
+  };
+
+  function setEnvironment(name) {
+    if (envFunctions[name]) {
+      currentEnv = name;
+      envFunctions[name]();
+
+      document.querySelectorAll('.env-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.env === name);
+      });
+    }
+  }
+
+  function init() {
+    document.querySelectorAll('.env-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        setEnvironment(btn.dataset.env);
+      });
+    });
+
+    // Apply default
+    applyStudio();
+  }
+
+  return {
+    init: init,
+    setEnvironment: setEnvironment,
+    getCurrentEnvironment: function() { return currentEnv; }
+  };
+})();
+
+/* Auto3D - Material System */
+var Auto3D = Auto3D || {};
+
+Auto3D.Materials = (function() {
+  var activeMaterial;
+
+  var presets = {
+    red: { color: 0xc0392b, metalness: 0.9, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.1 },
+    black: { color: 0x111111, metalness: 0.95, roughness: 0.15, clearcoat: 1.0, clearcoatRoughness: 0.05 },
+    white: { color: 0xf5f5f5, metalness: 0.8, roughness: 0.25, clearcoat: 1.0, clearcoatRoughness: 0.1 },
+    blue: { color: 0x1a5276, metalness: 0.9, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.1 },
+    silver: { color: 0xc0c0c0, metalness: 0.95, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.15 }
+  };
+
+  function createMaterial(params) {
+    return new THREE.MeshPhysicalMaterial({
+      color: params.color || 0xc0392b,
+      metalness: params.metalness !== undefined ? params.metalness : 0.9,
+      roughness: params.roughness !== undefined ? params.roughness : 0.2,
+      clearcoat: params.clearcoat !== undefined ? params.clearcoat : 1.0,
+      clearcoatRoughness: params.clearcoatRoughness !== undefined ? params.clearcoatRoughness : 0.1,
+      side: THREE.DoubleSide
+    });
+  }
+
+  function updateMaterial(params) {
+    if (!activeMaterial) return;
+    if (params.color !== undefined) activeMaterial.color.setHex(params.color);
+    if (params.metalness !== undefined) activeMaterial.metalness = params.metalness;
+    if (params.roughness !== undefined) activeMaterial.roughness = params.roughness;
+    if (params.clearcoat !== undefined) activeMaterial.clearcoat = params.clearcoat;
+    if (params.clearcoatRoughness !== undefined) activeMaterial.clearcoatRoughness = params.clearcoatRoughness;
+    activeMaterial.needsUpdate = true;
+  }
+
+  function applyPreset(name) {
+    var p = presets[name];
+    if (!p) return;
+    updateMaterial(p);
+
+    // Update UI
+    document.getElementById('mat-color').value = '#' + p.color.toString(16).padStart(6, '0');
+    document.getElementById('mat-metalness').value = p.metalness * 100;
+    document.getElementById('mat-roughness').value = p.roughness * 100;
+    document.getElementById('mat-clearcoat').value = p.clearcoat * 100;
+
+    document.querySelector('.dim-val[data-for="mat-metalness"]').textContent = p.metalness.toFixed(1);
+    document.querySelector('.dim-val[data-for="mat-roughness"]').textContent = p.roughness.toFixed(1);
+    document.querySelector('.dim-val[data-for="mat-clearcoat"]').textContent = p.clearcoat.toFixed(1);
+  }
+
+  function init() {
+    activeMaterial = createMaterial(presets.red);
+
+    // Color picker
+    var colorInput = document.getElementById('mat-color');
+    if (colorInput) {
+      colorInput.addEventListener('input', function() {
+        var hex = parseInt(colorInput.value.substring(1), 16);
+        updateMaterial({ color: hex });
+      });
+    }
+
+    // Sliders
+    var sliders = {
+      'mat-metalness': 'metalness',
+      'mat-roughness': 'roughness',
+      'mat-clearcoat': 'clearcoat'
+    };
+
+    Object.keys(sliders).forEach(function(sliderId) {
+      var slider = document.getElementById(sliderId);
+      var prop = sliders[sliderId];
+      if (slider) {
+        slider.addEventListener('input', function() {
+          var val = parseInt(slider.value) / 100;
+          var params = {};
+          params[prop] = val;
+          updateMaterial(params);
+          var valSpan = document.querySelector('.dim-val[data-for="' + sliderId + '"]');
+          if (valSpan) valSpan.textContent = val.toFixed(1);
+        });
+      }
+    });
+
+    // Presets
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        applyPreset(btn.dataset.preset);
+      });
+    });
+  }
+
+  return {
+    init: init,
+    getActiveMaterial: function() { return activeMaterial; },
+    createMaterial: createMaterial,
+    updateMaterial: updateMaterial,
+    applyPreset: applyPreset
+  };
+})();
+
+/* Auto3D - Application Entry Point */
+var Auto3D = Auto3D || {};
+
+// Global state
+Auto3D.state = {
+  tool: 'select',
+  mirror: true,
+  snap: true
+};
+
+(function() {
+  function init() {
+    // Initialize modules in order
+    Auto3D.Scene.init();
+    Auto3D.Views.init();
+    Auto3D.CarDimensions.init();
+    Auto3D.CurveTools.init();
+    Auto3D.SurfaceEngine.init();
+    Auto3D.Environment.init();
+    Auto3D.Materials.init();
+    Auto3D.History.init();
+
+    // Tool buttons
+    setupToolButtons();
+
+    // Undo/Redo buttons
+    setupUndoRedo();
+
+    // Mirror/Snap checkboxes
+    setupToggles();
+
+    // Keyboard shortcuts
+    setupKeyboard();
+
+    // Collapsible sections
+    setupCollapsibles();
+
+    console.log('Auto3D initialized');
+  }
+
+  function setTool(toolName) {
+    Auto3D.state.tool = toolName;
+
+    // Update UI
+    document.querySelectorAll('.tool-btn').forEach(function(btn) {
+      var btnTool = btn.id.replace('tool-', '');
+      btn.classList.toggle('active', btnTool === toolName);
+    });
+
+    // Update body class for cursor
+    document.body.className = 'tool-' + toolName;
+
+    // Update status
+    var names = { select: 'Select', draw: 'Draw Curve', edit: 'Edit Points', surface: 'Surface', erase: 'Delete' };
+    document.getElementById('status-tool').textContent = 'Tool: ' + (names[toolName] || toolName);
+
+    // Update hints
+    var hints = {
+      select: 'Click curve to select. Shift+click for multi-select.',
+      draw: 'Click to place points. Double-click or Enter to finish. Escape to cancel.',
+      edit: 'Click control point to select, drag to move.',
+      surface: 'Select 2+ curves, then click "Loft Selected Curves".',
+      erase: 'Click a curve to delete it.'
+    };
+    document.getElementById('status-hint').textContent = hints[toolName] || '';
+
+    // Cancel any drawing in progress when switching away from draw
+    if (toolName !== 'draw') {
+      Auto3D.CurveTools.cancelDrawing();
+    }
+
+    // Orbit controls: enable in select, surface mode; disable in others for ortho
+    var isOrthoView = Auto3D.Views.getCurrentView() !== 'perspective';
+    if (toolName === 'draw' || toolName === 'edit') {
+      if (isOrthoView) Auto3D.Scene.controls.enabled = false;
+    } else {
+      Auto3D.Scene.controls.enabled = !isOrthoView;
+    }
+  }
+
+  function setupToolButtons() {
+    var tools = ['select', 'draw', 'edit', 'surface', 'erase'];
+    tools.forEach(function(tool) {
+      var btn = document.getElementById('tool-' + tool);
+      if (btn) {
+        btn.addEventListener('click', function() {
+          setTool(tool);
+        });
+      }
+    });
+  }
+
+  function setupUndoRedo() {
+    document.getElementById('btn-undo').addEventListener('click', function() {
+      Auto3D.History.undo();
+    });
+    document.getElementById('btn-redo').addEventListener('click', function() {
+      Auto3D.History.redo();
+    });
+  }
+
+  function setupToggles() {
+    document.getElementById('chk-mirror').addEventListener('change', function() {
+      Auto3D.state.mirror = this.checked;
+      Auto3D.CurveTools.updateAllVisuals();
+    });
+    document.getElementById('chk-snap').addEventListener('change', function() {
+      Auto3D.state.snap = this.checked;
+    });
+  }
+
+  function setupKeyboard() {
+    document.addEventListener('keydown', function(e) {
+      // Don't handle if focused on input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+      switch (e.key) {
+        case 'v': case 'V': setTool('select'); break;
+        case 'd': case 'D': setTool('draw'); break;
+        case 'e': case 'E': setTool('edit'); break;
+        case 's': case 'S':
+          if (!e.ctrlKey && !e.metaKey) setTool('surface');
+          break;
+        case 'x': case 'X': setTool('erase'); break;
+        case '1': Auto3D.Views.switchView('perspective'); break;
+        case '2': Auto3D.Views.switchView('side'); break;
+        case '3': Auto3D.Views.switchView('front'); break;
+        case '4': Auto3D.Views.switchView('top'); break;
+        case '5': Auto3D.Views.switchView('rear'); break;
+        case 'z': case 'Z':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (e.shiftKey) {
+              Auto3D.History.redo();
+            } else {
+              Auto3D.History.undo();
+            }
+          }
+          break;
+        case 'y': case 'Y':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            Auto3D.History.redo();
+          }
+          break;
+      }
+    });
+  }
+
+  function setupCollapsibles() {
+    document.querySelectorAll('.section-header').forEach(function(header) {
+      header.addEventListener('click', function() {
+        var targetId = header.getAttribute('data-toggle');
+        if (!targetId) return;
+        var body = document.getElementById(targetId);
+        if (body) {
+          body.classList.toggle('collapsed');
+          header.classList.toggle('collapsed');
+        }
+      });
+    });
+  }
+
+  // Start
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+</script>
+</body>
+</html>
