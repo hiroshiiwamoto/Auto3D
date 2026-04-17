@@ -55,10 +55,14 @@ Auto3D.CurveTools = (function() {
 
     // Control points
     curveData.points.forEach(function(pt, idx) {
-      var sphereGeo = new THREE.SphereGeometry(20, 8, 8);
-      var sphereMat = new THREE.MeshBasicMaterial({ color: curveData.color });
+      var sphereGeo = new THREE.SphereGeometry(40, 12, 12);
+      var sphereMat = new THREE.MeshBasicMaterial({
+        color: curveData.color,
+        depthTest: false
+      });
       var sphere = new THREE.Mesh(sphereGeo, sphereMat);
       sphere.position.copy(pt);
+      sphere.renderOrder = 999;
       sphere.userData.curveId = curveData.id;
       sphere.userData.pointIndex = idx;
       group.add(sphere);
@@ -128,10 +132,14 @@ Auto3D.CurveTools = (function() {
 
     // Points
     drawingPoints.forEach(function(pt) {
-      var geo = new THREE.SphereGeometry(25, 8, 8);
-      var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      var geo = new THREE.SphereGeometry(45, 12, 12);
+      var mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        depthTest: false
+      });
       var sphere = new THREE.Mesh(geo, mat);
       sphere.position.copy(pt);
+      sphere.renderOrder = 999;
       previewGroup.add(sphere);
     });
 

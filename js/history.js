@@ -7,7 +7,8 @@ Auto3D.History = (function() {
   var MAX_STATES = 50;
 
   function serializeState() {
-    var curves = Auto3D.state ? Auto3D.state.curves : new Map();
+    if (!Auto3D.CurveTools) return '[]';
+    var curves = Auto3D.CurveTools.getCurves();
     var data = [];
     curves.forEach(function(curve, id) {
       data.push({

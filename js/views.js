@@ -8,6 +8,8 @@ Auto3D.Views = (function() {
   var transitionDuration = 400;
   var fromPos, fromTarget, toPos, toTarget;
 
+  var drawPlaneVisualizer = null;
+
   var viewConfigs = {
     perspective: {
       useOrtho: false,
@@ -21,7 +23,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 3000,
       label: 'SIDE VIEW',
-      drawPlane: 'xz-to-xy'
+      drawPlane: 'side'
     },
     front: {
       useOrtho: true,
@@ -29,7 +31,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 2500,
       label: 'FRONT VIEW',
-      drawPlane: 'yz'
+      drawPlane: 'front'
     },
     top: {
       useOrtho: true,
@@ -37,7 +39,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 0, 0),
       frustum: 4000,
       label: 'TOP VIEW',
-      drawPlane: 'xz'
+      drawPlane: 'top'
     },
     rear: {
       useOrtho: true,
@@ -45,23 +47,27 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 2500,
       label: 'REAR VIEW',
-      drawPlane: 'yz'
+      drawPlane: 'rear'
     }
   };
 
   function getDrawPlane(viewName) {
     var cfg = viewConfigs[viewName];
-    if (!cfg || !cfg.drawPlane) return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    if (!cfg || !cfg.drawPlane) {
+      // Perspective: use ground plane
+      return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    }
 
     switch (cfg.drawPlane) {
-      case 'xz-to-xy':
-        // Side view: draw on XY plane (Z=0) — vertical plane facing the camera
-        return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      case 'yz':
-        // Front/Rear view: draw on YZ plane (X=0)
+      case 'side':
+        // Side view: camera on +X axis, we see YZ. Draw on X=0 plane (YZ plane)
         return new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
-      case 'xz':
-        // Top view: draw on XZ plane (Y=0)
+      case 'front':
+      case 'rear':
+        // Front/Rear view: camera on +/-Z axis, we see XY. Draw on Z=0 plane (XY plane)
+        return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      case 'top':
+        // Top view: camera on +Y axis, we see XZ. Draw on Y=0 plane (XZ plane)
         return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       default:
         return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -103,6 +109,13 @@ Auto3D.Views = (function() {
     document.querySelectorAll('.view-btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.view === viewName);
     });
+
+    // Update drawing plane visualizer if draw mode is active
+    if (Auto3D.state && Auto3D.state.tool === 'draw') {
+      setTimeout(showDrawPlane, 50);
+    } else {
+      hideDrawPlane();
+    }
   }
 
   function updateTransition() {
@@ -143,11 +156,76 @@ Auto3D.Views = (function() {
     Auto3D.Scene.onRender(updateTransition);
   }
 
+  function showDrawPlane() {
+    hideDrawPlane();
+    var cfg = viewConfigs[currentView];
+    if (!cfg || !cfg.drawPlane) return;
+
+    var size = 6000;
+    var geo = new THREE.PlaneGeometry(size, size);
+    var mat = new THREE.MeshBasicMaterial({
+      color: 0x0096ff,
+      opacity: 0.05,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    drawPlaneVisualizer = new THREE.Mesh(geo, mat);
+
+    // Grid lines on the plane
+    var gridSize = size;
+    var gridDiv = 24;
+    var gridGeo = new THREE.BufferGeometry();
+    var verts = [];
+    var step = gridSize / gridDiv;
+    for (var i = 0; i <= gridDiv; i++) {
+      var v = -gridSize / 2 + i * step;
+      verts.push(-gridSize / 2, v, 0, gridSize / 2, v, 0);
+      verts.push(v, -gridSize / 2, 0, v, gridSize / 2, 0);
+    }
+    gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    var gridMat = new THREE.LineBasicMaterial({
+      color: 0x0096ff,
+      opacity: 0.15,
+      transparent: true,
+      depthWrite: false
+    });
+    var gridLines = new THREE.LineSegments(gridGeo, gridMat);
+    drawPlaneVisualizer.add(gridLines);
+
+    // Orient plane based on view
+    switch (cfg.drawPlane) {
+      case 'side':
+        drawPlaneVisualizer.rotation.y = Math.PI / 2;
+        break;
+      case 'front':
+      case 'rear':
+        // default orientation (facing +Z)
+        break;
+      case 'top':
+        drawPlaneVisualizer.rotation.x = Math.PI / 2;
+        break;
+    }
+
+    Auto3D.Scene.scene.add(drawPlaneVisualizer);
+  }
+
+  function hideDrawPlane() {
+    if (drawPlaneVisualizer) {
+      Auto3D.Scene.scene.remove(drawPlaneVisualizer);
+      if (drawPlaneVisualizer.geometry) drawPlaneVisualizer.geometry.dispose();
+      if (drawPlaneVisualizer.material) drawPlaneVisualizer.material.dispose();
+      drawPlaneVisualizer = null;
+    }
+  }
+
   return {
     init: init,
     switchView: switchView,
     getCurrentView: function() { return currentView; },
     getDrawPlane: function() { return getDrawPlane(currentView); },
-    getViewConfig: function() { return viewConfigs[currentView]; }
+    getViewConfig: function() { return viewConfigs[currentView]; },
+    showDrawPlane: showDrawPlane,
+    hideDrawPlane: hideDrawPlane
   };
 })();

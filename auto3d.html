@@ -351,6 +351,132 @@ body.tool-draw #viewport { cursor: crosshair; }
 body.tool-edit #viewport { cursor: pointer; }
 body.tool-surface #viewport { cursor: cell; }
 body.tool-erase #viewport { cursor: not-allowed; }
+
+/* Welcome Overlay */
+#welcome-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.4s ease;
+}
+#welcome-overlay.hidden {
+  display: none;
+}
+.welcome-card {
+  background: linear-gradient(140deg, rgba(40,40,50,0.95), rgba(20,20,25,0.95));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 40px;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 150, 255, 0.2);
+}
+.welcome-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+.welcome-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+.welcome-desc {
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+.welcome-steps {
+  text-align: left;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+}
+.welcome-step {
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text);
+}
+.welcome-step b {
+  color: var(--accent);
+  display: inline-block;
+  width: 18px;
+}
+.welcome-step kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+  margin: 0 2px;
+}
+.welcome-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.welcome-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.welcome-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+.welcome-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.welcome-btn.primary:hover {
+  background: var(--accent-dim);
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(0, 150, 255, 0.95);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 </style>
 </head>
 <body>
@@ -399,6 +525,17 @@ body.tool-erase #viewport { cursor: not-allowed; }
         <input type="checkbox" id="chk-snap" checked>
         <span>Snap</span>
       </label>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button id="btn-demo" class="tool-btn" title="Load Demo Car">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 13l1-4h12l1 4M5 13h14v5H5zM7 16h2M15 16h2M5 13l-1 2M19 13l1 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Demo</span>
+      </button>
+      <button id="btn-clear" class="tool-btn" title="Clear All">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Clear</span>
+      </button>
     </div>
     <div class="toolbar-title">Auto3D</div>
   </div>
@@ -500,6 +637,32 @@ body.tool-erase #viewport { cursor: not-allowed; }
 
   <!-- View Label Overlay -->
   <div id="view-label">PERSPECTIVE</div>
+
+  <!-- Welcome Overlay -->
+  <div id="welcome-overlay">
+    <div class="welcome-card">
+      <div class="welcome-title">Welcome to Auto3D</div>
+      <div class="welcome-subtitle">3D Car Design Tool</div>
+      <p class="welcome-desc">
+        Sketch car designs in 3D like drawing with pencil, but with full
+        volumetric freedom. Draw profile curves, cross-sections, and generate surfaces.
+      </p>
+      <div class="welcome-steps">
+        <div class="welcome-step"><b>1.</b> Press <kbd>2</kbd> for side view</div>
+        <div class="welcome-step"><b>2.</b> Press <kbd>D</kbd> to draw, click points</div>
+        <div class="welcome-step"><b>3.</b> Press <kbd>Enter</kbd> to finish curve</div>
+        <div class="welcome-step"><b>4.</b> Draw cross-sections in front view <kbd>3</kbd></div>
+        <div class="welcome-step"><b>5.</b> Select all + click <b>Loft</b> to make surface</div>
+      </div>
+      <div class="welcome-actions">
+        <button class="welcome-btn primary" id="welcome-start">Start Designing</button>
+        <button class="welcome-btn" id="welcome-demo">Load Demo Car</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
 
   <!-- Three.js CDN (r137 - last version with examples/js/) -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
@@ -623,7 +786,8 @@ Auto3D.History = (function() {
   var MAX_STATES = 50;
 
   function serializeState() {
-    var curves = Auto3D.state ? Auto3D.state.curves : new Map();
+    if (!Auto3D.CurveTools) return '[]';
+    var curves = Auto3D.CurveTools.getCurves();
     var data = [];
     curves.forEach(function(curve, id) {
       data.push({
@@ -728,6 +892,11 @@ Auto3D.Scene = (function() {
     activeCamera = perspCamera;
 
     // Orbit Controls
+    if (!THREE.OrbitControls) {
+      console.error('Auto3D: THREE.OrbitControls not loaded. Check CDN.');
+      alert('Three.js OrbitControls failed to load. Please check your internet connection.');
+      return;
+    }
     orbitControls = new THREE.OrbitControls(perspCamera, canvas);
     orbitControls.target.set(0, 500, 0);
     orbitControls.enableDamping = true;
@@ -736,10 +905,7 @@ Auto3D.Scene = (function() {
     orbitControls.maxDistance = 30000;
     orbitControls.update();
 
-    // Lighting
-    setupDefaultLighting();
-
-    // Grid
+    // Grid (lighting added by environment.js)
     setupGrid();
 
     // Ground
@@ -883,6 +1049,8 @@ Auto3D.Views = (function() {
   var transitionDuration = 400;
   var fromPos, fromTarget, toPos, toTarget;
 
+  var drawPlaneVisualizer = null;
+
   var viewConfigs = {
     perspective: {
       useOrtho: false,
@@ -896,7 +1064,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 3000,
       label: 'SIDE VIEW',
-      drawPlane: 'xz-to-xy'
+      drawPlane: 'side'
     },
     front: {
       useOrtho: true,
@@ -904,7 +1072,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 2500,
       label: 'FRONT VIEW',
-      drawPlane: 'yz'
+      drawPlane: 'front'
     },
     top: {
       useOrtho: true,
@@ -912,7 +1080,7 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 0, 0),
       frustum: 4000,
       label: 'TOP VIEW',
-      drawPlane: 'xz'
+      drawPlane: 'top'
     },
     rear: {
       useOrtho: true,
@@ -920,23 +1088,27 @@ Auto3D.Views = (function() {
       target: new THREE.Vector3(0, 700, 0),
       frustum: 2500,
       label: 'REAR VIEW',
-      drawPlane: 'yz'
+      drawPlane: 'rear'
     }
   };
 
   function getDrawPlane(viewName) {
     var cfg = viewConfigs[viewName];
-    if (!cfg || !cfg.drawPlane) return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    if (!cfg || !cfg.drawPlane) {
+      // Perspective: use ground plane
+      return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    }
 
     switch (cfg.drawPlane) {
-      case 'xz-to-xy':
-        // Side view: draw on XY plane (Z=0) — vertical plane facing the camera
-        return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      case 'yz':
-        // Front/Rear view: draw on YZ plane (X=0)
+      case 'side':
+        // Side view: camera on +X axis, we see YZ. Draw on X=0 plane (YZ plane)
         return new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
-      case 'xz':
-        // Top view: draw on XZ plane (Y=0)
+      case 'front':
+      case 'rear':
+        // Front/Rear view: camera on +/-Z axis, we see XY. Draw on Z=0 plane (XY plane)
+        return new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      case 'top':
+        // Top view: camera on +Y axis, we see XZ. Draw on Y=0 plane (XZ plane)
         return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       default:
         return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -978,6 +1150,13 @@ Auto3D.Views = (function() {
     document.querySelectorAll('.view-btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.view === viewName);
     });
+
+    // Update drawing plane visualizer if draw mode is active
+    if (Auto3D.state && Auto3D.state.tool === 'draw') {
+      setTimeout(showDrawPlane, 50);
+    } else {
+      hideDrawPlane();
+    }
   }
 
   function updateTransition() {
@@ -1018,12 +1197,77 @@ Auto3D.Views = (function() {
     Auto3D.Scene.onRender(updateTransition);
   }
 
+  function showDrawPlane() {
+    hideDrawPlane();
+    var cfg = viewConfigs[currentView];
+    if (!cfg || !cfg.drawPlane) return;
+
+    var size = 6000;
+    var geo = new THREE.PlaneGeometry(size, size);
+    var mat = new THREE.MeshBasicMaterial({
+      color: 0x0096ff,
+      opacity: 0.05,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    drawPlaneVisualizer = new THREE.Mesh(geo, mat);
+
+    // Grid lines on the plane
+    var gridSize = size;
+    var gridDiv = 24;
+    var gridGeo = new THREE.BufferGeometry();
+    var verts = [];
+    var step = gridSize / gridDiv;
+    for (var i = 0; i <= gridDiv; i++) {
+      var v = -gridSize / 2 + i * step;
+      verts.push(-gridSize / 2, v, 0, gridSize / 2, v, 0);
+      verts.push(v, -gridSize / 2, 0, v, gridSize / 2, 0);
+    }
+    gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    var gridMat = new THREE.LineBasicMaterial({
+      color: 0x0096ff,
+      opacity: 0.15,
+      transparent: true,
+      depthWrite: false
+    });
+    var gridLines = new THREE.LineSegments(gridGeo, gridMat);
+    drawPlaneVisualizer.add(gridLines);
+
+    // Orient plane based on view
+    switch (cfg.drawPlane) {
+      case 'side':
+        drawPlaneVisualizer.rotation.y = Math.PI / 2;
+        break;
+      case 'front':
+      case 'rear':
+        // default orientation (facing +Z)
+        break;
+      case 'top':
+        drawPlaneVisualizer.rotation.x = Math.PI / 2;
+        break;
+    }
+
+    Auto3D.Scene.scene.add(drawPlaneVisualizer);
+  }
+
+  function hideDrawPlane() {
+    if (drawPlaneVisualizer) {
+      Auto3D.Scene.scene.remove(drawPlaneVisualizer);
+      if (drawPlaneVisualizer.geometry) drawPlaneVisualizer.geometry.dispose();
+      if (drawPlaneVisualizer.material) drawPlaneVisualizer.material.dispose();
+      drawPlaneVisualizer = null;
+    }
+  }
+
   return {
     init: init,
     switchView: switchView,
     getCurrentView: function() { return currentView; },
     getDrawPlane: function() { return getDrawPlane(currentView); },
-    getViewConfig: function() { return viewConfigs[currentView]; }
+    getViewConfig: function() { return viewConfigs[currentView]; },
+    showDrawPlane: showDrawPlane,
+    hideDrawPlane: hideDrawPlane
   };
 })();
 
@@ -1278,10 +1522,14 @@ Auto3D.CurveTools = (function() {
 
     // Control points
     curveData.points.forEach(function(pt, idx) {
-      var sphereGeo = new THREE.SphereGeometry(20, 8, 8);
-      var sphereMat = new THREE.MeshBasicMaterial({ color: curveData.color });
+      var sphereGeo = new THREE.SphereGeometry(40, 12, 12);
+      var sphereMat = new THREE.MeshBasicMaterial({
+        color: curveData.color,
+        depthTest: false
+      });
       var sphere = new THREE.Mesh(sphereGeo, sphereMat);
       sphere.position.copy(pt);
+      sphere.renderOrder = 999;
       sphere.userData.curveId = curveData.id;
       sphere.userData.pointIndex = idx;
       group.add(sphere);
@@ -1351,10 +1599,14 @@ Auto3D.CurveTools = (function() {
 
     // Points
     drawingPoints.forEach(function(pt) {
-      var geo = new THREE.SphereGeometry(25, 8, 8);
-      var mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      var geo = new THREE.SphereGeometry(45, 12, 12);
+      var mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        depthTest: false
+      });
       var sphere = new THREE.Mesh(geo, mat);
       sphere.position.copy(pt);
+      sphere.renderOrder = 999;
       previewGroup.add(sphere);
     });
 
@@ -2283,6 +2535,13 @@ Auto3D.state = {
 
 (function() {
   function init() {
+    // Check Three.js loaded
+    if (typeof THREE === 'undefined') {
+      document.body.innerHTML = '<div style="color:#ff6b6b;padding:40px;font-family:sans-serif;">' +
+        '<h2>Three.js failed to load</h2>' +
+        '<p>Check your internet connection. Auto3D requires Three.js from a CDN.</p></div>';
+      return;
+    }
     // Initialize modules in order
     Auto3D.Scene.init();
     Auto3D.Views.init();
@@ -2308,8 +2567,156 @@ Auto3D.state = {
     // Collapsible sections
     setupCollapsibles();
 
+    // Welcome overlay
+    setupWelcome();
+
+    // Demo + Clear buttons
+    setupDemoClear();
+
     console.log('Auto3D initialized');
   }
+
+  function showToast(msg, duration) {
+    var toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(function() {
+      toast.classList.remove('show');
+    }, duration || 2500);
+  }
+  Auto3D.showToast = showToast;
+
+  function setupWelcome() {
+    var overlay = document.getElementById('welcome-overlay');
+    if (!overlay) return;
+
+    document.getElementById('welcome-start').addEventListener('click', function() {
+      overlay.classList.add('hidden');
+      showToast('Press D to draw, 2 for side view', 3000);
+    });
+    document.getElementById('welcome-demo').addEventListener('click', function() {
+      overlay.classList.add('hidden');
+      loadDemoCar();
+    });
+  }
+
+  function setupDemoClear() {
+    var demoBtn = document.getElementById('btn-demo');
+    if (demoBtn) {
+      demoBtn.addEventListener('click', loadDemoCar);
+    }
+    var clearBtn = document.getElementById('btn-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        if (confirm('Clear all curves and surfaces?')) {
+          Auto3D.CurveTools.clearAll();
+          // Clear surfaces too
+          var surfs = Auto3D.SurfaceEngine.getSurfaces();
+          var surfIds = Array.from(surfs.keys());
+          surfIds.forEach(function(id) { Auto3D.SurfaceEngine.removeSurface(id); });
+          showToast('Cleared');
+        }
+      });
+    }
+  }
+
+  function loadDemoCar() {
+    Auto3D.CurveTools.clearAll();
+
+    // Create a simple car silhouette (side view) and cross-sections
+    var curves = [
+      // Side silhouette
+      {
+        name: 'Side Profile',
+        plane: 'side',
+        points: [
+          [0, 400, -2350],  // rear bumper bottom
+          [0, 800, -2300],  // rear trunk start
+          [0, 1350, -1400], // rear pillar top
+          [0, 1400, -200],  // roof mid
+          [0, 1380, 900],   // windshield top
+          [0, 850, 1500],   // hood front
+          [0, 400, 2350]    // front bumper
+        ]
+      },
+      // Front cross-section (at car's front, z=1500)
+      {
+        name: 'Front Section',
+        plane: 'front',
+        points: [
+          [-900, 400, 1500],
+          [-850, 700, 1500],
+          [-600, 900, 1500],
+          [0, 950, 1500],
+          [600, 900, 1500],
+          [850, 700, 1500],
+          [900, 400, 1500]
+        ]
+      },
+      // Mid cross-section (roof highest point, z=0)
+      {
+        name: 'Mid Section',
+        plane: 'front',
+        points: [
+          [-925, 400, 0],
+          [-900, 800, 0],
+          [-700, 1250, 0],
+          [0, 1400, 0],
+          [700, 1250, 0],
+          [900, 800, 0],
+          [925, 400, 0]
+        ]
+      },
+      // Rear cross-section (at z=-1500)
+      {
+        name: 'Rear Section',
+        plane: 'front',
+        points: [
+          [-900, 400, -1500],
+          [-880, 750, -1500],
+          [-650, 1200, -1500],
+          [0, 1320, -1500],
+          [650, 1200, -1500],
+          [880, 750, -1500],
+          [900, 400, -1500]
+        ]
+      }
+    ];
+
+    var crossSectionIds = [];
+    curves.forEach(function(c, i) {
+      var points = c.points.map(function(p) { return new THREE.Vector3(p[0], p[1], p[2]); });
+      var data = {
+        id: Auto3D.Utils.generateId(),
+        name: c.name,
+        type: c.plane === 'side' ? 'profile' : 'cross-section',
+        plane: c.plane,
+        closed: false,
+        visible: true,
+        color: [0xff6b6b, 0x51cf66, 0x339af0, 0xfcc419][i % 4]
+      };
+      Auto3D.CurveTools.restoreCurve(data, points);
+      if (c.plane === 'front') {
+        crossSectionIds.push(data.id);
+      }
+    });
+
+    // Auto-generate surface from the 3 cross-sections
+    if (crossSectionIds.length >= 2) {
+      Auto3D.SurfaceEngine.generateSurface(crossSectionIds, {
+        resolution: 32,
+        mirror: false  // cross-sections already span both sides
+      });
+    }
+
+    // Switch to perspective to see the result
+    Auto3D.Views.switchView('perspective');
+
+    showToast('Demo car loaded with surface. Rotate to view.', 3500);
+  }
+  Auto3D.loadDemoCar = loadDemoCar;
 
   function setTool(toolName) {
     Auto3D.state.tool = toolName;
@@ -2340,6 +2747,20 @@ Auto3D.state = {
     // Cancel any drawing in progress when switching away from draw
     if (toolName !== 'draw') {
       Auto3D.CurveTools.cancelDrawing();
+    }
+
+    // Show/hide drawing plane visualizer
+    if (toolName === 'draw') {
+      // Auto-switch to side view if in perspective (better for drawing)
+      if (Auto3D.Views.getCurrentView() === 'perspective' && !Auto3D._hasDrawnOnce) {
+        Auto3D.Views.switchView('side');
+        Auto3D._hasDrawnOnce = true;
+      } else {
+        Auto3D.Views.showDrawPlane();
+      }
+      showToast('Click to place points. Press Enter to finish.', 3500);
+    } else {
+      Auto3D.Views.hideDrawPlane();
     }
 
     // Orbit controls: enable in select, surface mode; disable in others for ortho

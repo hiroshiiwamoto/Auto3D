@@ -10,6 +10,13 @@ Auto3D.state = {
 
 (function() {
   function init() {
+    // Check Three.js loaded
+    if (typeof THREE === 'undefined') {
+      document.body.innerHTML = '<div style="color:#ff6b6b;padding:40px;font-family:sans-serif;">' +
+        '<h2>Three.js failed to load</h2>' +
+        '<p>Check your internet connection. Auto3D requires Three.js from a CDN.</p></div>';
+      return;
+    }
     // Initialize modules in order
     Auto3D.Scene.init();
     Auto3D.Views.init();
@@ -35,8 +42,156 @@ Auto3D.state = {
     // Collapsible sections
     setupCollapsibles();
 
+    // Welcome overlay
+    setupWelcome();
+
+    // Demo + Clear buttons
+    setupDemoClear();
+
     console.log('Auto3D initialized');
   }
+
+  function showToast(msg, duration) {
+    var toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(function() {
+      toast.classList.remove('show');
+    }, duration || 2500);
+  }
+  Auto3D.showToast = showToast;
+
+  function setupWelcome() {
+    var overlay = document.getElementById('welcome-overlay');
+    if (!overlay) return;
+
+    document.getElementById('welcome-start').addEventListener('click', function() {
+      overlay.classList.add('hidden');
+      showToast('Press D to draw, 2 for side view', 3000);
+    });
+    document.getElementById('welcome-demo').addEventListener('click', function() {
+      overlay.classList.add('hidden');
+      loadDemoCar();
+    });
+  }
+
+  function setupDemoClear() {
+    var demoBtn = document.getElementById('btn-demo');
+    if (demoBtn) {
+      demoBtn.addEventListener('click', loadDemoCar);
+    }
+    var clearBtn = document.getElementById('btn-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        if (confirm('Clear all curves and surfaces?')) {
+          Auto3D.CurveTools.clearAll();
+          // Clear surfaces too
+          var surfs = Auto3D.SurfaceEngine.getSurfaces();
+          var surfIds = Array.from(surfs.keys());
+          surfIds.forEach(function(id) { Auto3D.SurfaceEngine.removeSurface(id); });
+          showToast('Cleared');
+        }
+      });
+    }
+  }
+
+  function loadDemoCar() {
+    Auto3D.CurveTools.clearAll();
+
+    // Create a simple car silhouette (side view) and cross-sections
+    var curves = [
+      // Side silhouette
+      {
+        name: 'Side Profile',
+        plane: 'side',
+        points: [
+          [0, 400, -2350],  // rear bumper bottom
+          [0, 800, -2300],  // rear trunk start
+          [0, 1350, -1400], // rear pillar top
+          [0, 1400, -200],  // roof mid
+          [0, 1380, 900],   // windshield top
+          [0, 850, 1500],   // hood front
+          [0, 400, 2350]    // front bumper
+        ]
+      },
+      // Front cross-section (at car's front, z=1500)
+      {
+        name: 'Front Section',
+        plane: 'front',
+        points: [
+          [-900, 400, 1500],
+          [-850, 700, 1500],
+          [-600, 900, 1500],
+          [0, 950, 1500],
+          [600, 900, 1500],
+          [850, 700, 1500],
+          [900, 400, 1500]
+        ]
+      },
+      // Mid cross-section (roof highest point, z=0)
+      {
+        name: 'Mid Section',
+        plane: 'front',
+        points: [
+          [-925, 400, 0],
+          [-900, 800, 0],
+          [-700, 1250, 0],
+          [0, 1400, 0],
+          [700, 1250, 0],
+          [900, 800, 0],
+          [925, 400, 0]
+        ]
+      },
+      // Rear cross-section (at z=-1500)
+      {
+        name: 'Rear Section',
+        plane: 'front',
+        points: [
+          [-900, 400, -1500],
+          [-880, 750, -1500],
+          [-650, 1200, -1500],
+          [0, 1320, -1500],
+          [650, 1200, -1500],
+          [880, 750, -1500],
+          [900, 400, -1500]
+        ]
+      }
+    ];
+
+    var crossSectionIds = [];
+    curves.forEach(function(c, i) {
+      var points = c.points.map(function(p) { return new THREE.Vector3(p[0], p[1], p[2]); });
+      var data = {
+        id: Auto3D.Utils.generateId(),
+        name: c.name,
+        type: c.plane === 'side' ? 'profile' : 'cross-section',
+        plane: c.plane,
+        closed: false,
+        visible: true,
+        color: [0xff6b6b, 0x51cf66, 0x339af0, 0xfcc419][i % 4]
+      };
+      Auto3D.CurveTools.restoreCurve(data, points);
+      if (c.plane === 'front') {
+        crossSectionIds.push(data.id);
+      }
+    });
+
+    // Auto-generate surface from the 3 cross-sections
+    if (crossSectionIds.length >= 2) {
+      Auto3D.SurfaceEngine.generateSurface(crossSectionIds, {
+        resolution: 32,
+        mirror: false  // cross-sections already span both sides
+      });
+    }
+
+    // Switch to perspective to see the result
+    Auto3D.Views.switchView('perspective');
+
+    showToast('Demo car loaded with surface. Rotate to view.', 3500);
+  }
+  Auto3D.loadDemoCar = loadDemoCar;
 
   function setTool(toolName) {
     Auto3D.state.tool = toolName;
@@ -67,6 +222,20 @@ Auto3D.state = {
     // Cancel any drawing in progress when switching away from draw
     if (toolName !== 'draw') {
       Auto3D.CurveTools.cancelDrawing();
+    }
+
+    // Show/hide drawing plane visualizer
+    if (toolName === 'draw') {
+      // Auto-switch to side view if in perspective (better for drawing)
+      if (Auto3D.Views.getCurrentView() === 'perspective' && !Auto3D._hasDrawnOnce) {
+        Auto3D.Views.switchView('side');
+        Auto3D._hasDrawnOnce = true;
+      } else {
+        Auto3D.Views.showDrawPlane();
+      }
+      showToast('Click to place points. Press Enter to finish.', 3500);
+    } else {
+      Auto3D.Views.hideDrawPlane();
     }
 
     // Orbit controls: enable in select, surface mode; disable in others for ortho

@@ -45,6 +45,11 @@ Auto3D.Scene = (function() {
     activeCamera = perspCamera;
 
     // Orbit Controls
+    if (!THREE.OrbitControls) {
+      console.error('Auto3D: THREE.OrbitControls not loaded. Check CDN.');
+      alert('Three.js OrbitControls failed to load. Please check your internet connection.');
+      return;
+    }
     orbitControls = new THREE.OrbitControls(perspCamera, canvas);
     orbitControls.target.set(0, 500, 0);
     orbitControls.enableDamping = true;
@@ -53,10 +58,7 @@ Auto3D.Scene = (function() {
     orbitControls.maxDistance = 30000;
     orbitControls.update();
 
-    // Lighting
-    setupDefaultLighting();
-
-    // Grid
+    // Grid (lighting added by environment.js)
     setupGrid();
 
     // Ground

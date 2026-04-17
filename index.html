@@ -53,6 +53,17 @@
         <span>Snap</span>
       </label>
     </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button id="btn-demo" class="tool-btn" title="Load Demo Car">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 13l1-4h12l1 4M5 13h14v5H5zM7 16h2M15 16h2M5 13l-1 2M19 13l1 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Demo</span>
+      </button>
+      <button id="btn-clear" class="tool-btn" title="Clear All">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Clear</span>
+      </button>
+    </div>
     <div class="toolbar-title">Auto3D</div>
   </div>
 
@@ -153,6 +164,32 @@
 
   <!-- View Label Overlay -->
   <div id="view-label">PERSPECTIVE</div>
+
+  <!-- Welcome Overlay -->
+  <div id="welcome-overlay">
+    <div class="welcome-card">
+      <div class="welcome-title">Welcome to Auto3D</div>
+      <div class="welcome-subtitle">3D Car Design Tool</div>
+      <p class="welcome-desc">
+        Sketch car designs in 3D like drawing with pencil, but with full
+        volumetric freedom. Draw profile curves, cross-sections, and generate surfaces.
+      </p>
+      <div class="welcome-steps">
+        <div class="welcome-step"><b>1.</b> Press <kbd>2</kbd> for side view</div>
+        <div class="welcome-step"><b>2.</b> Press <kbd>D</kbd> to draw, click points</div>
+        <div class="welcome-step"><b>3.</b> Press <kbd>Enter</kbd> to finish curve</div>
+        <div class="welcome-step"><b>4.</b> Draw cross-sections in front view <kbd>3</kbd></div>
+        <div class="welcome-step"><b>5.</b> Select all + click <b>Loft</b> to make surface</div>
+      </div>
+      <div class="welcome-actions">
+        <button class="welcome-btn primary" id="welcome-start">Start Designing</button>
+        <button class="welcome-btn" id="welcome-demo">Load Demo Car</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
 
   <!-- Three.js CDN (r137 - last version with examples/js/) -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
